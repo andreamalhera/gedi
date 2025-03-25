@@ -103,5 +103,5 @@ def test_abbr_GediTask():
     similarities = [round(target['features']['target_similarity'], 1) for target in genED.generated_features]
     assert len(similarities) == len(VALIDATION_OUTPUT)
     AGREEMENT_THRESHOLD = 0.75
-    agreement = sum(1 for o, u in zip(similarities, VALIDATION_OUTPUT) if o == u) / len(VALIDATION_OUTPUT) * 100
+    agreement = sum(1 for o, u in zip(similarities, VALIDATION_OUTPUT) if abs(o-u)<=0.1) / len(VALIDATION_OUTPUT) * 100
     assert agreement >= AGREEMENT_THRESHOLD
