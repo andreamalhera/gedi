@@ -42,6 +42,7 @@ def get_feature_type(ft_name):
     return ft_type
 
 #TODO: Asses if to move within class
+
 def compute_features_from_event_data(feature_set, event_data: EventLog):
     features_computation = {}
     for ft_name in feature_set:
@@ -197,4 +198,3 @@ class EventDataFeatures(EventLogFile):
         print(f"  DONE: {file_path}. FEEED computed {feature_set}")
         dump_features_json(features, os.path.join(self.root_path,identifier))
         return features
-
