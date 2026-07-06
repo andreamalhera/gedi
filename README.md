@@ -69,7 +69,7 @@ Our pipeline offers several pipeline steps, which can be run sequentially or par
 - [Feature Extraction](#feature-extraction)
 - [Generation](#generation)
 - [Benchmark](#benchmark)
-- [Evaluation Plotter](https://github.com/lmu-dbs/gedi/blob/16-documentation-update-readme/README.md#evaluation-plotting)
+- [Evaluation Plotter](https://github.com/andreamalhera/gedi/blob/16-documentation-update-readme/README.md#evaluation-plotting)
 
 To run different steps of the GEDI pipeline, please adapt the `.json` accordingly.
 ```console

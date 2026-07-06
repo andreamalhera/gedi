@@ -4,7 +4,7 @@ import os
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-version_string = os.environ.get("VERSION_PLACEHOLDER", "1.0.8")
+version_string = os.environ.get("VERSION_PLACEHOLDER", "1.9.0")
 print(version_string)
 version = version_string
 
@@ -19,6 +19,9 @@ setup(
         url='https://github.com/lmu-dbs/gedi.git',
         long_description=long_description,
         long_description_content_type="text/markdown",
+
+        python_requires='>=3.9',
+
         include_package_data=True,
         install_requires=[
             'pandas==2.2.3',
@@ -37,10 +40,11 @@ setup(
             'pytest~=8.3.4',
             ],
         classifiers=[
-            'Development Status :: 3 - Alpha',      # Chose either "3 - Alpha", "4 - Beta" or "5 - Production/Stable" as the current state of your package
-            'Intended Audience :: Science/Research',      # Define that your audience are developers
+            'Development Status :: 3 - Alpha',
+            'Intended Audience :: Science/Research',
             'Topic :: Software Development',
-            'License :: OSI Approved :: MIT License',   # Again, pick a license
+            'License :: OSI Approved :: MIT License',
             'Programming Language :: Python :: 3.12',
+            "Programming Language :: Python :: 3.14",
     ],
 )
