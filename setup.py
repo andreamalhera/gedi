@@ -20,7 +20,7 @@ setup(
         long_description=long_description,
         long_description_content_type="text/markdown",
 
-        python_requires='>=3.9',
+        python_requires='>=3.9, <3.14',
 
         include_package_data=True,
         install_requires=[
@@ -30,7 +30,7 @@ setup(
             'feeed>=2.0.0',
             'smac==2.4.0',
             'seaborn==0.13.2',
-            'scipy~=1.14.1',
+            'scipy>=1.14.1',
             'scikit-learn>=1.6.1,<1.9.0',
             'tqdm~=4.65.0',
             'matplotlib>=3.10.9',
