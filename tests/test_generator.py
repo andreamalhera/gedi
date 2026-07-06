@@ -57,7 +57,7 @@ def test_GediTask_103_compatibility():
                                                           'duplicate': [0], 'or': [0]},
                                          'n_trials': 50}}
     VALIDATION_OUTPUT = [0.89, 0.7, 0.89, 1.0]
-    genED = GenerateEventLogs(INPUT_PARAMS)
+    genED = GediTask(INPUT_PARAMS)
     similarities = [round(target['features']['target_similarity'], 2) for target in genED.generated_features]
 
     assert len(similarities) == len(VALIDATION_OUTPUT)

@@ -1,38 +1,33 @@
 from gedi.features import EventDataFeatures, compute_features_from_event_data
 from gedi.features import _is_feature_class
-from pm4py.objects.log.obj import EventLog, Trace, Event
 from datetime import datetime as dt
+from pm4py import convert_to_event_log
 
+import pandas as pd
 import os
 import pytest
 import time
 
 def prepare_log():
-        # Prepare a mock event log for testing
-        log = EventLog()
+        data = [
+            {
+                "case:concept:name": "trace_1",
+                "concept:name": "event_1",
+                "time:timestamp": dt(2024, 12, 11, 11, 41, 58),
+                "lifecycle:transition": "start"
+            },
+            {
+                "case:concept:name": "trace_1",
+                "concept:name": "event_2",
+                "time:timestamp": dt(2024, 12, 12, 6, 9, 47),
+                "lifecycle:transition": "complete"
+            }
+        ]
 
-        # Create a trace and add events to it
-        trace = Trace()
-        trace.attributes['concept:name'] = 'trace_1'
+        df = pd.DataFrame(data)
+        df["time:timestamp"] = pd.to_datetime(df["time:timestamp"])
 
-        event1 = Event()
-        event1['concept:name'] = 'event_1'
-        event1['time:timestamp'] = dt(2024, 12, 11, 11, 41, 58)
-        event1['lifecycle:transition'] = 'start'
-
-        event2 = Event()
-        event2['concept:name'] = 'event_2'
-        event2['time:timestamp'] = dt(2024, 12, 12, 6, 9, 47)
-        event2['lifecycle:transition'] = 'complete'
-
-        # Adds events to the trace
-        trace.append(event1)
-        trace.append(event2)
-
-        # Add trace to the log
-        log.append(trace)
-
-        return log
+        return convert_to_event_log(df)
 
 def test_is_feature_class():
     PASCAL_INPUT = 'SimpleStats'

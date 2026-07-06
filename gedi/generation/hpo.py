@@ -84,11 +84,11 @@ class GediTask():
                 config_space = params.get('generator_params').get('config_space')
                 system_params = {'n_trials': params.get('generator_params').get('n_trials')}
             else:
-                raise TypeError(f"Missing 'params'. Please provide a dictionary with generator valid parameters. See https://github.com/lmu-dbs/gedi for more info.")
+                raise TypeError(f"Missing 'params'. Please provide a dictionary with generator valid parameters. See https://github.com/andreamalhera/gedi for more info.")
 
         # If generator is not suitable, raise an error.
         if embedded_generator is not None and (not hasattr(embedded_generator, 'generate_log') or not hasattr(embedded_generator, 'generate_optimized_log')):
-            raise ValueError("Unknown generator type. Please provide a valid generator or None. See https://github.com/lmu-dbs/gedi for more info.")
+            raise ValueError("Unknown generator type. Please provide a valid generator or None. See https://github.com/andreamalhera/gedi for more info.")
 
         tasks, system_params = self.setup_GediTask(targets = targets,
                                                       system_params = system_params)
@@ -134,7 +134,7 @@ class GediTask():
                                                                     'loop': [0.01, 1], 'silent': [0.01, 1], 'lt_dependency': [0.01, 1], 'num_traces': [10, 101], 'duplicate': [0], 'or': [0]},
                                                    'system_params': {'n_trials': 50}
                                                    }}
-            raise TypeError(f"Missing 'params'. Please provide a dictionary with generator parameters as so: {default_params}. See https://github.com/lmu-dbs/gedi for more info.")
+            raise TypeError(f"Missing 'params'. Please provide a dictionary with generator parameters as so: {default_params}. See https://github.com/andreamalhera/gedi for more info.")
         print(f"INFO: Running with {targets}, {system_params}")
         if system_params is None:
             system_params = {'output_path': None, 'n_trials': None}
@@ -154,7 +154,7 @@ class GediTask():
             targets = generator_params.get("experiment")#Compatibility with older versions
         """
         if targets is None:
-                raise TypeError(f"Missing 'targets'. Please provide a dictionary with generator parameters as so: {default_params}. See https://github.com/lmu-dbs/gedi for more info.")
+                raise TypeError(f"Missing 'targets'. Please provide a dictionary with generator parameters as so: {default_params}. See https://github.com/andreamalhera/gedi for more info.")
 
         tasks, output_path = get_tasks(targets, self.output_path)
         columns_to_rename = {col: column_mappings()[col] for col in tasks.columns if col in column_mappings()}
