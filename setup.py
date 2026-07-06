@@ -31,7 +31,7 @@ setup(
             'smac==2.4.0',
             'seaborn==0.13.2',
             'scipy~=1.14.1',
-            'scikit-learn>=1.6.1',
+            'scikit-learn>=1.6.1,<1.9.0',
             'tqdm~=4.65.0',
             'matplotlib>=3.10.9',
             'pm4py>=2.7.2',
