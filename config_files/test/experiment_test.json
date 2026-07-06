@@ -8,31 +8,30 @@
   },
   {
     "pipeline_step": "event_logs_generation",
-    "output_path": "output/features/2_bpic_features/2_ense_rmcv_feat.csv",
-    "output_path": "data/test",
-    "generator_params": {
-      "experiment": "data/grid_objectives.csv",
-      "experiment": {"input_path": "data/2_bpic_features.csv",
-        "objectives": ["ratio_top_20_variants", "epa_normalized_sequence_entropy_linear_forgetting"]},
-      "experiment": [
-          {"epa_normalized_sequence_entropy_linear_forgetting": 0.2, "ratio_top_20_variants": 0.4},
-          {"epa_normalized_sequence_entropy_linear_forgetting": 0.4, "ratio_top_20_variants": 0.7}
-        ],
-      "experiment": {"epa_normalized_sequence_entropy_linear_forgetting": 0.2, "ratio_top_20_variants": 0.4},
-      "config_space": {
-        "mode": [5, 20],
-        "sequence": [0.01, 1],
-        "choice": [0.01, 1],
-        "parallel": [0.01, 1],
-        "loop": [0.01, 1],
-        "silent": [0.01, 1],
-        "lt_dependency": [0.01, 1],
-        "num_traces": [10, 100],
-        "duplicate": [0],
-        "or": [0]
-      },
-      "n_trials": 2
-    }
+		"targets": "data/grid_objectives.csv",
+		"targets": {"input_path": "data/2_bpic_features.csv",
+			"objectives": ["ratio_top_20_variants", "epa_normalized_sequence_entropy_linear_forgetting"]},
+		"targets": [
+				{"epa_normalized_sequence_entropy_linear_forgetting": 0.2, "ratio_top_20_variants": 0.4},
+				{"epa_normalized_sequence_entropy_linear_forgetting": 0.4, "ratio_top_20_variants": 0.7}
+			],
+		"targets": {"epa_normalized_sequence_entropy_linear_forgetting": 0.2, "ratio_top_20_variants": 0.4},
+		"config_space": {
+			"mode": [5, 20],
+			"sequence": [0.01, 1],
+			"choice": [0.01, 1],
+			"parallel": [0.01, 1],
+			"loop": [0.01, 1],
+			"silent": [0.01, 1],
+			"lt_dependency": [0.01, 1],
+			"num_traces": [10, 100],
+			"duplicate": [0],
+			"or": [0]
+		},
+		"system_params": {"n_trials": 2,
+		"output_path": "output/features/2_bpic_features/2_ense_rmcv_feat.csv",
+		"output_path": "data/test"
+		}
   },
   {
     "pipeline_step": "feature_extraction",

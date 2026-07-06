@@ -48,9 +48,9 @@ class BenchmarkTest:
                  print(f"INFO: Benchmark starting at {start.strftime('%H:%M:%S')} using {num_cores} cores for {len(event_logs)} files...")
                  p.starmap(self.benchmark_wrapper, zip(event_logs, log_counter, repeat(self.params[MINERS])))
 
-             # Aggregates metafeatures in saved Jsons into dataframe
+             # Aggregates features in saved Jsons into dataframe
              self.root_path = self.params[INPUT_PATH]
-             path_to_json = f"output/benchmark/{str(self.root_path).split('/',1)[1]}"
+             path_to_json = os.path.join("output",str(self.root_path).split('/',1)[1],"benchmark")
              if path_to_json.endswith(".xes"):
                 path_to_json = path_to_json.rsplit("/",1)[0]
              df = pd.DataFrame()
@@ -108,7 +108,7 @@ class BenchmarkTest:
         results['log'] = log_name
 
         print(f"    SUCCESS: {miner} miner for {results} took {dt.now()-start_miner} sec.")
-        dump_features_json(results, os.path.join(dump_path, log_name), content_type="benchmark")
+        dump_features_json(results, dump_path, content_type="benchmark")
         return
 
     def split_miner_wrapper(self, log_path="data/real_event_logs/BPI_Challenges/BPI_Challenge_2012.xes"):

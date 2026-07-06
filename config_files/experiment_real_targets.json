@@ -1,26 +1,27 @@
 [
    {
     "pipeline_step": "event_logs_generation",
-    "output_path": "output",
-    "generator_params": {
-      "experiment": {
-        "input_path": "data/BaselineED_feat.csv",
-        "objectives":["ratio_variants_per_number_of_traces","ratio_most_common_variant","ratio_top_10_variants","epa_normalized_variant_entropy","epa_normalized_sequence_entropy","epa_normalized_sequence_entropy_linear_forgetting","epa_normalized_sequence_entropy_exponential_forgetting"]},
-        "config_space": {
-        "mode": [5, 20],
-        "sequence": [0.01, 1],
-        "choice": [0.01, 1],
-        "parallel": [0.01, 1],
-        "loop": [0.01, 1],
-        "silent": [0.01, 1],
-        "lt_dependency": [0.01, 1],
-        "num_traces": [10, 10001],
-        "duplicate": [0],
-        "or": [0]
-      },
-      "n_trials": 200,
-      "plot_reference_feature": ""
-    }
+		"targets": {
+			"input_path": "data/BaselineED_feat.csv",
+			"objectives":["ratio_variants_per_number_of_traces","ratio_most_common_variant","ratio_top_10_variants",
+			"epa_normalized_variant_entropy","epa_normalized_sequence_entropy","epa_normalized_sequence_entropy_linear_forgetting",
+			"epa_normalized_sequence_entropy_exponential_forgetting"]},
+			"config_space": {
+			"mode": [5, 20],
+			"sequence": [0.01, 1],
+			"choice": [0.01, 1],
+			"parallel": [0.01, 1],
+			"loop": [0.01, 1],
+			"silent": [0.01, 1],
+			"lt_dependency": [0.01, 1],
+			"num_traces": [10, 10001],
+			"duplicate": [0],
+			"or": [0]
+		},
+		"systems_params": {
+			"output_path": "output",
+			"n_trials": 200},
+		"plot_reference_feature": ""
   },
   {
     "pipeline_step": "feature_extraction",

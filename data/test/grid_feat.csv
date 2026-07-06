@@ -1,5 +1,5 @@
 log,ratio_top_20_variants,epa_normalized_sequence_entropy_linear_forgetting
-experiment1,0.2,0.4
-experiment2,0.4,0.7
-experiment3,NaN,0.4
-experiment4,0.2,NaN
+task1,0.2,0.4
+task2,0.4,0.7
+task3,NaN,0.4
+task4,0.2,NaN

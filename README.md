@@ -69,7 +69,7 @@ Our pipeline offers several pipeline steps, which can be run sequentially or par
 - [Feature Extraction](#feature-extraction)
 - [Generation](#generation)
 - [Benchmark](#benchmark)
-- [Evaluation Plotter](https://github.com/lmu-dbs/gedi/blob/16-documentation-update-readme/README.md#evaluation-plotting)
+- [Evaluation Plotter](https://github.com/andreamalhera/gedi/blob/16-documentation-update-readme/README.md#evaluation-plotting)
 
 To run different steps of the GEDI pipeline, please adapt the `.json` accordingly.
 ```console
@@ -112,11 +112,8 @@ python main.py -a config_files/pipeline_steps/generation.json
 In the `generation.json`, we have the following key-value pairs:
 
 * pipeline_step: denotes the current step in the pipeline (here: event_logs_generation)
-* output_path: defines the output folder
-* generator_params: defines the configuration of the generator itself. For the generator itself, we can set values for the general 'experiment', 'config_space', 'n_trials', and a specific 'plot_reference_feature' being used for plotting
-
-    - experiment: defines the path to the input file which contains the features that are used for the optimization step. The 'objectives' define the specific features, which are the optimization criteria.
-    - config_space: here, we define the configuration of the generator module (here: process tree generator). The process tree generator can process input information which defines characteristics for the generated data (a more thorough overview of the params can be found [here](https://github.com/tjouck/PTandLogGenerator):
+* targets: defines the path to the input file which contains the features that are used for the optimization step. The 'objectives' define the specific features, which are the optimization criteria.
+* config_space: here, we define the configuration of the generator module (here: process tree generator). The process tree generator can process input information which defines characteristics for the generated data (a more thorough overview of the params can be found [here](https://github.com/tjouck/PTandLogGenerator):
 
         - mode: most frequent number of visible activities
         - sequence: the probability of adding a sequence operator to the tree
@@ -129,9 +126,10 @@ In the `generation.json`, we have the following key-value pairs:
         - duplicate: the probability of duplicating an activity label
         - or: probability to add an or operator to the tree
 
+* system_params:
+    - output_path: defines the output folder
     - n_trials: the maximum number of trials for the hyperparameter optimization to find a feasible solution to the specific configuration being used as the target
-
-    - plot_reference_feature: defines the feature, which is used on the x-axis on the output plots, i.e., each feature defined in the 'objectives' of the 'experiment' is plotted against the reference feature being defined in this value
+* plot_reference_feature: defines the feature, which is used on the x-axis on the output plots, i.e., each feature defined in the 'objectives' of the 'target' is plotted against the reference feature being defined in this value
 
 In case of manually defining the targets for the features in config space, the following table shows the range of the features in the real-world event log data (BPIC's) for reference:
 <div style="overflow-x:auto;">
@@ -384,7 +382,7 @@ Generally, in the `evaluation_plotter.json`, we have the following key-value pai
 * output_path: defines where to store the plots
 
 ## Experiments
-In this repository, experiments can be run selectively or from scratch, as preferred. For this purpose, we linked both inputs and outputs for each stage. In this section, we present the reproduction of generated event data, as in our paper, as well as the [visualization of evaluation figures](#visualizations).
+In this repository, targets can be run selectively or from scratch, as preferred. For this purpose, we linked both inputs and outputs for each stage. In this section, we present the reproduction of generated event data, as in our paper, as well as the [visualization of evaluation figures](#visualizations).
 We present two settings for generating intentional event logs, using [real targets](#generating-data-with-real-targets) or using [grid targets](#generating-data-with-grid-targets). Both settings output `.xes` event logs, `.json` and `.csv` files containing feature values, as well as evaluation results, from running a [process discovery benchmark](#benchmark), for the generated event logs.
 
 ### Generating data with real targets
@@ -401,7 +399,7 @@ To execute the experiments with grid targets, a single [configuration](config_fi
 conda activate gedi
 python gedi/utils/execute_grid_experiments.py config_files/test
 ```
-We employ the [experiment_grid_2obj_configfiles_fabric.ipynb](notebooks/experiment_grid_2obj_configfiles_fabric.ipynb) to create all necessary [configuration](config_files/grid_2obj) and [objective](data/grid_2obj) files for this experiment.
+We employ the [Config files fabric](notebooks/grid_experiment_configfiles_fabric.ipynb) to create all necessary [configuration](config_files/grid_2obj) and [objective](data/grid_2obj) files for this experiment.
 For more details about these config_files, please refer to [Feature Extraction](#feature-extraction), [Generation](#generation), and [Benchmark](#benchmark).
 To create configuration files for grid objectives interactively, you can use the start the following dashboard:
 ```
@@ -448,7 +446,7 @@ year="2024",
 publisher="Springer Nature Switzerland",
 address="Cham",
 pages="221--237",
-abstract="Process mining solutions include enhancing performance, conserving resources, and alleviating bottlenecks in organizational contexts. However, as in other data mining fields, success hinges on data quality and availability. Existing analyses for process mining solutions lack diverse and ample data for rigorous testing, hindering insights' generalization. To address this, we propose Generating Event Data with Intentional features, a framework producing event data sets satisfying specific meta-features. Considering the meta-feature space that defines feasible event logs, we observe that existing real-world datasets describe only local areas within the overall space. Hence, our framework aims at providing the capability to generate an event data benchmark, which covers unexplored regions. Therefore, our approach leverages a discretization of the meta-feature space to steer generated data towards regions, where a combination of meta-features is not met yet by existing benchmark datasets. Providing a comprehensive data pool enriches process mining analyses, enables methods to capture a wider range of real-world scenarios, and improves evaluation quality. Moreover, it empowers analysts to uncover correlations between meta-features and evaluation metrics, enhancing explainability and solution effectiveness. Experiments demonstrate GEDI's ability to produce a benchmark of intentional event data sets and robust analyses for process mining tasks.",
+abstract="Process mining solutions include enhancing performance, conserving resources, and alleviating bottlenecks in organizational contexts. However, as in other data mining fields, success hinges on data quality and availability. Existing analyses for process mining solutions lack diverse and ample data for rigorous testing, hindering insights' generalization. To address this, we propose Generating Event Data with Intentional features, a framework producing event data sets satisfying specific meta-features. Considering the meta-feature space that defines feasible event logs, we observe that existing real-world datasets describe only local areas within the overall space. Hence, our framework aims at providing the capability to generate an event data benchmark, which covers unexplored regions. Therefore, our approach leverages a discretization of the meta-feature space to steer generated data towards regions, where a combination of meta-features is not met yet by existing benchmark datasets. Providing a comprehensive data pool enriches process mining analyses, enables methods to capture a wider range of real-world scenarios, and improves evaluation quality. Moreover, it empowers analysts to uncover correlations between meta-features and evaluation metrics, enhancing explainability and solution effectiveness. targets demonstrate GEDI's ability to produce a benchmark of intentional event data sets and robust analyses for process mining tasks.",
 isbn="978-3-031-70396-6"
 }
 ```

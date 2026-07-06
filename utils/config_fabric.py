@@ -160,8 +160,8 @@ def create_objectives_grid(df, objectives, n_para_obj=2, method="combinatorial")
 
         try:
             cartesian_product = list(cproduct(*eval(tasks)))
-            experiments = [{key: value[idx] for idx, key in enumerate(objectives)} for value in cartesian_product]
-            return experiments
+            targets = [{key: value[idx] for idx, key in enumerate(objectives)} for value in cartesian_product]
+            return targets
         except SyntaxError as e:
             st.write("Please select valid features above.")
             sys.exit(1)
@@ -169,7 +169,7 @@ def create_objectives_grid(df, objectives, n_para_obj=2, method="combinatorial")
             st.write("Please select at least 2 values to define.")
             sys.exit(1)
 
-def set_generator_experiments(generator_params):
+def set_generator_targets(generator_params):
     def handle_csv_file(uploaded_file,grid_option):
         #TODO: This code is duplicated. Should be moved and removed.
         def column_mappings():
@@ -205,7 +205,7 @@ def set_generator_experiments(generator_params):
     def handle_combinatorial(sel_features, stats, tuple_values):
         triangular_option = double_switch("Square", "Triangular")
         if triangular_option:
-            experiments = []
+            targets = []
             elements = sel_features
             # List to store all combinations
             all_combinations = [combinations(sel_features, r) for r in range(1, len(sel_features) + 1)]
@@ -214,10 +214,10 @@ def set_generator_experiments(generator_params):
             # Print or use the result as needed
             for comb in all_combinations:
                 sel_stats = stats.loc[sorted(list(comb))]
-                experiments += create_objectives_grid(sel_stats, tuple_values, n_para_obj=len(tuple_values), method="combinatorial")
+                targets += create_objectives_grid(sel_stats, tuple_values, n_para_obj=len(tuple_values), method="combinatorial")
         else: # Square
-            experiments = create_objectives_grid(stats, tuple_values, n_para_obj=len(tuple_values), method="combinatorial")
-        return experiments
+            targets = create_objectives_grid(stats, tuple_values, n_para_obj=len(tuple_values), method="combinatorial")
+        return targets
 
     def handle_csv_option(grid_option, df, sel_features):
         if grid_option:
@@ -236,8 +236,8 @@ def set_generator_experiments(generator_params):
             return df.to_dict(orient='records')
 
     def feature_select():
-        return st.multiselect("Selected features", list(generator_params['experiment'].keys()),
-                                                        list(generator_params['experiment'].keys())[-1])
+        return st.multiselect("Selected features", list(generator_params['target'].keys()),
+                                                        list(generator_params['target'].keys())[-1])
 
     def handle_manual_option(grid_option):
         if grid_option:
@@ -249,7 +249,7 @@ def set_generator_experiments(generator_params):
                 with col2:
                     sel_features = feature_select()
 
-                filtered_dict = {key: generator_params['experiment'][key] for key in sel_features if key in generator_params['experiment']}
+                filtered_dict = {key: generator_params['target'][key] for key in sel_features if key in generator_params['target']}
                 values_indexes = ["value "+str(i+1) for i in range(num_values)]
                 values_defaults = ['*(1+2*0.'+str(i)+')' for i in range(num_values)]
                 cross_labels =  [feature[0]+': '+feature[1] for feature in list(cproduct(sel_features,values_indexes))]
@@ -263,14 +263,14 @@ def set_generator_experiments(generator_params):
 
             else: # Range
                 sel_features = feature_select()
-                return create_objectives_grid(generator_params['experiment'], sel_features, n_para_obj=len(sel_features), method="range-manual")
+                return create_objectives_grid(generator_params['target'], sel_features, n_para_obj=len(sel_features), method="range-manual")
 
         else: # Point
             sel_features = feature_select()
-            #sel_features = st.multiselect("Selected features", list(generator_params['experiment'].keys()))
+            #sel_features = st.multiselect("Selected features", list(generator_params['target'].keys()))
 
-            experiment = {sel_feature: float(st.text_input(sel_feature, generator_params['experiment'][sel_feature])) for sel_feature in sel_features}
-            return [experiment]
+            target = {sel_feature: float(st.text_input(sel_feature, generator_params['target'][sel_feature])) for sel_feature in sel_features}
+            return [target]
         return[]
 
 
@@ -278,13 +278,13 @@ def set_generator_experiments(generator_params):
 
     if csv_option:
         uploaded_file = st.file_uploader("Pick a csv-file containing feature values for features (or) an xes-event log:", type=["csv","xes"])
-        experiments = []
+        targets = []
         if uploaded_file is not None:
             if uploaded_file.name.endswith('.xes'):
                 with open(f"{uploaded_file.name}", 'wb') as f:
                     f.write(uploaded_file.getbuffer())
 
-                sel_features = st.multiselect("Selected features", list(generator_params['experiment'].keys()))
+                sel_features = st.multiselect("Selected features", list(generator_params['target'].keys()))
                 xes_features = extract_features(f"{uploaded_file.name}", sel_features)
                 del xes_features['log']
                 # removing the temporary file
@@ -292,19 +292,19 @@ def set_generator_experiments(generator_params):
                 if os.path.exists(f"{uploaded_file.name}"):
                     os.remove(f"{uploaded_file.name}")
                 xes_features = {key: float(value) for key, value in xes_features.items()}
-                experiments = [xes_features]
+                targets = [xes_features]
 
             if uploaded_file.name.endswith('.csv'):
                 df, sel_features = handle_csv_file(uploaded_file,grid_option)
                 if df is not None and sel_features is not None:
-                    experiments = handle_csv_option(grid_option, df, sel_features)
+                    targets = handle_csv_option(grid_option, df, sel_features)
                 else:
-                    experiments = []
+                    targets = []
     else:  # Manual
-        experiments = handle_manual_option(grid_option)
+        targets = handle_manual_option(grid_option)
 
-    generator_params['experiment'] = experiments
-    st.write(f"...result in {len(generator_params['experiment'])} experiment(s)")
+    generator_params['target'] = targets
+    st.write(f"...result in {len(generator_params['target'])} target(s)")
 
     """
     #### Configuration space
@@ -351,8 +351,8 @@ if __name__ == '__main__':
             # Iterate through step configuration keys
             for step_key in step_config.keys():
                 if step_key == "generator_params":
-                    st.subheader("Set-up experiments")
-                    step_config[step_key] = set_generator_experiments(step_config[step_key])
+                    st.subheader("Set-up targets")
+                    step_config[step_key] = set_generator_targets(step_config[step_key])
                 elif step_key == "feature_params":
                     layout_features = list(step_config[step_key]['feature_set'])
                     step_config[step_key]["feature_set"] = st.multiselect(
@@ -371,7 +371,7 @@ if __name__ == '__main__':
     config_file = json.dumps(step_configs, indent=4)
 
     # Streamlit input for output file path
-    output_path = st.text_input("Output file path", "config_files/experiment_config.json")
+    output_path = st.text_input("Output file path", "config_files/target_config.json")
 
     # Ensure output directory exists
     os.makedirs(os.path.dirname(output_path), exist_ok=True)

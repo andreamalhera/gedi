@@ -9,12 +9,12 @@ import os
 import glob
 
 from collections import defaultdict
-from gedi.generator import get_tasks
+from gedi.generation.hpo import get_tasks
 from gedi.utils.io_helpers import get_keys_abbreviation
 from gedi.utils.io_helpers import read_csvs, select_instance
 from gedi.utils.param_keys import PLOT_TYPE, PROJECTION, EXPLAINED_VAR, PLOT_3D_MAP
 from gedi.utils.param_keys import OUTPUT_PATH, PIPELINE_STEP
-from gedi.utils.param_keys.generator import GENERATOR_PARAMS, EXPERIMENT, PLOT_REFERENCE_FEATURE
+from gedi.utils.param_keys.generator import GENERATOR_PARAMS, TARGETS, PLOT_REFERENCE_FEATURE
 from gedi.utils.param_keys.plotter import REAL_EVENTLOG_PATH, FONT_SIZE, BOXPLOT_WIDTH
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
@@ -637,14 +637,14 @@ class GenerationPlotter(object):
         self.model_params = model_params
         if gen_cfg.empty: # Deactivated for tests
             return
-        if "metafeatures" in gen_cfg.columns:
-            self.gen = gen_cfg.metafeatures
+        if "features" in gen_cfg.columns:
+            self.gen = gen_cfg.features
             self.gen=pd.concat([pd.DataFrame.from_dict(entry, orient="Index").T for entry in self.gen]).reset_index(drop=True)
         else:
             self.gen = gen_cfg.reset_index(drop=True)
 
         if GENERATOR_PARAMS in model_params:
-            self.tasks, _ = get_tasks(model_params[GENERATOR_PARAMS][EXPERIMENT])
+            self.tasks, _ = get_tasks(model_params[GENERATOR_PARAMS][TARGETS])
             feature_list = list(self.tasks.select_dtypes(exclude=['object']).keys())
             ref_feat = None
             if PLOT_REFERENCE_FEATURE in model_params[GENERATOR_PARAMS]and model_params[GENERATOR_PARAMS][PLOT_REFERENCE_FEATURE] != "":
@@ -696,7 +696,7 @@ class GenerationPlotter(object):
             target_nan_logs_competitor = targets.loc[target_nan_values_idx_competitor]['log']
             # Collection of indices to drop
             target_nan_indices = np.unique(np.concatenate((target_nan_values_idx_competitor, target_nan_values_idx_reference)))
-            # Drop NAN values in target DataFrame
+            # Drop NAN values in targets DataFrame
             targets.drop(axis='index', index=target_nan_indices, inplace=True)
 
             # Check for indices in generated DataFrame
@@ -707,7 +707,7 @@ class GenerationPlotter(object):
             # Drop NAN values in generated DataFrame
             v.drop(axis='index', index=reference_nan_indices, inplace=True)
 
-            # Plot generated DataFrame + target DataFrame 
+            # Plot generated DataFrame + targets DataFrame
             v.plot.scatter(x=v.columns.get_loc(reference_feature), y=v.columns.get_loc(k), ax=axes[idx_ax], c="red", alpha=0.3)
             targets.plot.scatter(x=targets.columns.get_loc(reference_feature), y=targets.columns.get_loc(k), ax=axes[idx_ax], c='blue', alpha=0.3)
 

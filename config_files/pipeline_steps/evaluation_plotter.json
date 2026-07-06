@@ -10,9 +10,9 @@
         "reference_feature": "epa_normalized_sequence_entropy_exponential_forgetting",
         "reference_feature": "epa_normalized_variant_entropy",
         "targets": "data/BaselineED_feat.csv",
-        "targets": "data/grid_experiments/grid_2obj/",
-        "targets": ["data/grid_experiments/grid_1obj/", "data/grid_experiments/grid_2obj/"],
-        "targets": "data/grid_experiments/grid_1obj/grid_1objectives_enve.csv",
+        "targets": "data/grid_targets/grid_2obj/",
+        "targets": ["data/grid_targets/grid_1obj/", "data/grid_targets/grid_2obj/"],
+        "targets": "data/grid_targets/grid_1obj/grid_1objectives_enve.csv",
         "targets": "data/test/plotter/grid_1objectives_enve.csv",
         "output_path": "output/plots"
     }

@@ -1,13 +1,14 @@
 [{"pipeline_step": "event_logs_generation",
-"output_path": "output/generated/grid_2obj",
-"generator_params": {"experiment":
+"targets":
 	{"input_path": "data/test/2_grid_test.csv",
 	"objectives": ["epa_normalized_sequence_entropy",
 		"epa_normalized_sequence_entropy_linear_forgetting"]},
-	"config_space": {"mode": [5, 20], "sequence": [0.01, 1],
+"config_space": {"mode": [5, 20], "sequence": [0.01, 1],
 	"choice": [0.01, 1], "parallel": [0.01, 1], "loop": [0.01, 1],
 	"silent": [0.01, 1], "lt_dependency": [0.01, 1],
-	"num_traces": [10, 10001], "duplicate": [0], "or": [0]}, "n_trials": 3}},
+	"num_traces": [10, 10001], "duplicate": [0], "or": [0]},
+"system_params": {"n_trials": 3,
+	"output_path": "output/generated/grid_2obj"}},
 	{"pipeline_step": "feature_extraction",
 	"input_path": "output/features/generated/2_grid_test/2_ense_enself",
 	"feature_params": {"feature_set": ["epa_normalized_sequence_entropy",

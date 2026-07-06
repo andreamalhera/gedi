@@ -1,4 +1,4 @@
 from .run import gedi
-from .generator import GenerateEventLogs
+from .generation.hpo import GediTask, GenerateEventLogs
 
-__all__=['gedi', 'GenerateEventLogs']
+__all__=['gedi', 'GediTask', 'GenerateEventLogs']

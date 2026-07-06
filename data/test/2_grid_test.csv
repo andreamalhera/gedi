@@ -1,3 +1,3 @@
-log,ratio_top_20_variants,epa_normalized_sequence_entropy_linear_forgetting
-experiment1,0.2,0.4
-experiment2,0.4,0.7
+log,epa_normalized_sequence_entropy,epa_normalized_sequence_entropy_linear_forgetting
+task1,0.2,0.4
+task2,0.4,0.7

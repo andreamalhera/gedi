@@ -21,7 +21,7 @@ from gedi.utils.io_helpers import dump_features_json
 from gedi.utils.param_keys import INPUT_PATH
 from gedi.utils.param_keys.features import FEATURE_PARAMS, FEATURE_SET
 from pathlib import Path
-from pm4py.objects.log.obj import EventLog
+from typing import Union, Any
 
 def _is_feature_class(name: str) -> bool:
     try:
@@ -41,7 +41,9 @@ def get_feature_type(ft_name):
     ft_type = feature_type(ft_name)
     return ft_type
 
-def compute_features_from_event_data(feature_set, event_data: EventLog):
+#TODO: Asses if to move within class
+
+def compute_features_from_event_data(feature_set, event_data: Union[pd.DataFrame, Any]):
     features_computation = {}
     for ft_name in feature_set:
         #print("FEATURE_SET", feature_set)

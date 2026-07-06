@@ -11,7 +11,7 @@ on:
 
 # Specifies the jobs that are to be run
 jobs:
-  test_feature-extraction:
+  test_feature_computation:
     runs-on: ubuntu-latest
 
     # Setting up a python envronment  for the test script to run
@@ -22,19 +22,20 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: 3.9
+        python-version: 3.12
 
-    - name: Install locally
+    - name: Install local package
       run: |
         python -m pip install --upgrade pip
         pip install .
 
+    - name: Set PYTHONPATH for tests
+      run: |
+        echo "PYTHONPATH=$(pwd)" >> $GITHUB_ENV
+
     - name: Run test
       run:
-        python main.py -a config_files/pipeline_steps/feature_extraction.json
-
-    - name: Compare output
-      run: diff data/validation/test_feat.csv data/test_feat.csv
+        pytest -v tests/test_feature_extraction.py --maxfail=1 --disable-warnings -q
 
   test_generation:
     runs-on: ubuntu-latest
@@ -47,36 +48,20 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: 3.9
+        python-version: 3.12
 
-    - name: Install dependencies
-      run: |
-        sudo apt-get install build-essential python3 python3-dev
-
-    - name: Install locally
+    - name: Install local package
       run: |
         python -m pip install --upgrade pip
         pip install .
 
+    - name: Set PYTHONPATH for tests
+      run: |
+        echo "PYTHONPATH=$(pwd)" >> $GITHUB_ENV
+
     - name: Run test
       run:
-        python main.py -a config_files/pipeline_steps/generation.json
-
-    - name: Compare output 1
-      run: 
-        diff data/validation/genEL1_04_02.json output/features/2_enself_rt20v/genEL1_04_02.json
-
-    - name: Compare output 2
-      run: 
-        diff data/validation/genEL2_07_04.json output/features/2_enself_rt20v/genEL2_07_04.json
-
-    - name: Compare output 3
-      run:
-        diff data/validation/genEL3_04_nan.json output/features/2_enself_rt20v/genEL3_04_nan.json
-
-    - name: Compare output 4
-      run: 
-        diff data/validation/genEL4_nan_02.json output/features/2_enself_rt20v/genEL4_nan_02.json
+        pytest -v tests/test_generator.py --maxfail=1 --disable-warnings -q
 
   test_benchmark:
     runs-on: ubuntu-latest
@@ -89,7 +74,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: 3.9
+        python-version: 3.12
 
     - name: Install locally
       run: |
@@ -119,7 +104,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: 3.9
+        python-version: 3.12
 
     - name: Install locally
       run: |
@@ -141,7 +126,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: 3.9
+        python-version: 3.12
 
     - name: Install dependencies
       run: |
@@ -167,7 +152,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: 3.9
+        python-version: 3.12
 
     - name: Install dependencies
       run: |
@@ -193,7 +178,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: 3.9
+        python-version: 3.12
 
     - name: Install dependencies
       run: |
@@ -213,81 +198,3 @@ jobs:
 
     - name: Compare output
       run: diff data/validation/2_ense_enseef_feat.csv output/features/generated/2_bpic_features/2_ense_enseef_feat.csv
-
-  test_abbrv:
-    runs-on: ubuntu-latest
-
-    # Setting up a python envronment  for the test script to run
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: 3.9
-
-    - name: Install dependencies
-      run: |
-        sudo apt-get install build-essential python3 python3-dev
-
-    - name: Install locally
-      run: |
-        python -m pip install --upgrade pip
-        pip install .
-
-    - name: Run test
-      run:
-        python main.py -a config_files/test/test_abbrv_generation.json
-
-    - name: Compare output
-      run:
-        diff data/validation/2_ense_rmcv_feat.csv output/test/igedi_table_1/2_ense_rmcv_feat.csv
-
-  test_pypible_generate_event_logs_feeed_update:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: 3.9
-
-    - name: Install dependencies
-      run: |
-        sudo apt-get install build-essential python3 python3-dev
-
-    - name: Install locally
-      run: |
-        python -m pip install --upgrade pip
-        pip install .
-
-    - name: Run test
-      run: |
-        python -c "from gedi import GenerateEventLogs;default_params = {'generator_params': {'experiment': {'ratio_variants_per_number_of_traces': 0.2, 'n_variants': 4}, 'config_space': {'mode': [5, 20], 'sequence': [0.01, 1], 'choice': [0.01, 1], 'parallel': [0.01, 1], 'loop': [0.01, 1], 'silent': [0.01, 1], 'lt_dependency': [0.01, 1], 'num_traces': [10, 101], 'duplicate': [0], 'or': [0]}, 'n_trials': 50}}; GenerateEventLogs(default_params)"
-
-  test_pypible_generate_event_logs:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: 3.9
-
-    - name: Install dependencies
-      run: |
-        sudo apt-get install build-essential python3 python3-dev
-
-    - name: Install locally
-      run: |
-        python -m pip install --upgrade pip
-        pip install .
-
-    - name: Run test
-      run: |
-        python -c "from gedi import GenerateEventLogs;default_params = {'generator_params': {'experiment': {'ratio_most_common_variant': 0.2, 'epa_normalized_sequence_entropy_linear_forgetting': 0.4}, 'config_space': {'mode': [5, 20], 'sequence': [0.01, 1], 'choice': [0.01, 1], 'parallel': [0.01, 1], 'loop': [0.01, 1], 'silent': [0.01, 1], 'lt_dependency': [0.01, 1], 'num_traces': [10, 101], 'duplicate': [0], 'or': [0]}, 'n_trials': 50}}; GenerateEventLogs(default_params)"
