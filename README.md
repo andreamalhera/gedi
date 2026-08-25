@@ -22,6 +22,7 @@ This repository contains the codebase for the interactive web application tool (
 ## Table of Contents
 
 - [Interactive Web Application (iGEDI)](#interactive-web-application)
+  - [Running locally](#running-locally)
 - [Requirements](#requirements)
 - [Installation](#installation)
 - [General Usage](#general-usage)
@@ -32,17 +33,30 @@ This repository contains the codebase for the interactive web application tool (
 Our [interactive web application](https://huggingface.co/spaces/andreamalhera/gedi) (iGEDI) guides you through the specification process, runs GEDI for you. You can directly download the resulting generated logs or the configuration file to run GEDI locally.
 ![Interface Screenshot](gedi/utils/iGEDI_interface.png)
 
+### Running locally
+To start the iGEDI web application on your own machine (requires Python 3.12, matching the deployed app):
+```console
+pip install -r requirements.txt streamlit==1.38.0
+streamlit run utils/config_fabric.py
+```
+This launches a local Streamlit server, by default at [http://localhost:8501](http://localhost:8501).
+
+To run it headless and tunnel it to your local machine (e.g. on a remote server):
+```console
+streamlit run utils/config_fabric.py --server.port 8501 --server.headless true
+
+# On your local machine:
+ssh -N -f -L 9000:localhost:8501 <user@remote_machine.com>
+open "http://localhost:9000/"
+```
+
 ## Requirements
 - [Miniconda](https://docs.conda.io/en/latest/miniconda.html)
+- Python 3.12 (the pinned dependency versions are tested against this version; newer Pythons can hit build failures in transitive C-extension dependencies)
 - Graphviz on your OS e.g.
 For MacOS:
 ```console
 brew install graphviz
-brew install swig
-```
-- For smac:
-```console
-conda install pyrfr swig
 ```
 
 ## Installation

@@ -236,8 +236,8 @@ def set_generator_targets(generator_params):
             return df.to_dict(orient='records')
 
     def feature_select():
-        return st.multiselect("Selected features", list(generator_params['target'].keys()),
-                                                        list(generator_params['target'].keys())[-1])
+        return st.multiselect("Selected features", list(generator_params['targets'].keys()),
+                                                        list(generator_params['targets'].keys())[-1])
 
     def handle_manual_option(grid_option):
         if grid_option:
@@ -249,7 +249,7 @@ def set_generator_targets(generator_params):
                 with col2:
                     sel_features = feature_select()
 
-                filtered_dict = {key: generator_params['target'][key] for key in sel_features if key in generator_params['target']}
+                filtered_dict = {key: generator_params['targets'][key] for key in sel_features if key in generator_params['targets']}
                 values_indexes = ["value "+str(i+1) for i in range(num_values)]
                 values_defaults = ['*(1+2*0.'+str(i)+')' for i in range(num_values)]
                 cross_labels =  [feature[0]+': '+feature[1] for feature in list(cproduct(sel_features,values_indexes))]
@@ -263,13 +263,13 @@ def set_generator_targets(generator_params):
 
             else: # Range
                 sel_features = feature_select()
-                return create_objectives_grid(generator_params['target'], sel_features, n_para_obj=len(sel_features), method="range-manual")
+                return create_objectives_grid(generator_params['targets'], sel_features, n_para_obj=len(sel_features), method="range-manual")
 
         else: # Point
             sel_features = feature_select()
-            #sel_features = st.multiselect("Selected features", list(generator_params['target'].keys()))
+            #sel_features = st.multiselect("Selected features", list(generator_params['targets'].keys()))
 
-            target = {sel_feature: float(st.text_input(sel_feature, generator_params['target'][sel_feature])) for sel_feature in sel_features}
+            target = {sel_feature: float(st.text_input(sel_feature, generator_params['targets'][sel_feature])) for sel_feature in sel_features}
             return [target]
         return[]
 
@@ -284,7 +284,7 @@ def set_generator_targets(generator_params):
                 with open(f"{uploaded_file.name}", 'wb') as f:
                     f.write(uploaded_file.getbuffer())
 
-                sel_features = st.multiselect("Selected features", list(generator_params['target'].keys()))
+                sel_features = st.multiselect("Selected features", list(generator_params['targets'].keys()))
                 xes_features = extract_features(f"{uploaded_file.name}", sel_features)
                 del xes_features['log']
                 # removing the temporary file
@@ -303,8 +303,8 @@ def set_generator_targets(generator_params):
     else:  # Manual
         targets = handle_manual_option(grid_option)
 
-    generator_params['target'] = targets
-    st.write(f"...result in {len(generator_params['target'])} target(s)")
+    generator_params['targets'] = targets
+    st.write(f"...result in {len(generator_params['targets'])} target(s)")
 
     """
     #### Configuration space
