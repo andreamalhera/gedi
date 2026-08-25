@@ -1,6 +1,5 @@
 from itertools import product as cproduct
 from itertools import combinations
-from pathlib import Path
 from pylab import *
 import base64
 import json
@@ -14,7 +13,15 @@ import shutil
 import zipfile
 import io
 import sys
+
+# In some sandboxed containers (e.g. the Hugging Face Space runtime), os.getppid()
+# returns a PID with no corresponding process. pm4py's import-time constants.py
+# calls psutil.Process(os.getppid()) unguarded, which raises NoSuchProcess there.
+# Substitute a PID that's always valid (our own) for the duration of this import only.
+_real_getppid = os.getppid
+os.getppid = os.getpid
 from feeed.feature_extractor import extract_features
+os.getppid = _real_getppid
 
 st.set_page_config(layout='wide')
 INPUT_XES="output/inputlog_temp.xes"
@@ -318,9 +325,10 @@ def set_generator_targets(generator_params):
 
 def sort_key(val):
     parts = val.split('_')
-    # Extract and convert the numeric parts
-    part1 = int(parts[0][5:])  # e.g., from 'genEL1', extract '1'
-    return (part1)
+    # Extract the numeric parts after the 'genEL' prefix as floats, e.g. from 'genEL_039'
+    # get (39.0,), or from 'genEL_047_nan' (a multi-objective target missing one dimension)
+    # get (47.0, nan). float() parses both regular numbers and the literal 'nan' segment.
+    return tuple(float(part) for part in parts[1:])
 
 if __name__ == '__main__':
     play_header()
@@ -368,7 +376,22 @@ if __name__ == '__main__':
         step_configs.append(step_config)
 
     # Convert step configurations to JSON
-    config_file = json.dumps(step_configs, indent=4)
+    # The UI groups targets/config_space/n_trials under "generator_params" for editing, but
+    # gedi/run.py reads them as flat top-level keys (targets, config_space, system_params) on
+    # each step. Flatten into the shape the pipeline actually consumes before saving/running.
+    run_configs = []
+    for step_config in step_configs:
+        run_config = dict(step_config)
+        if run_config.get("pipeline_step") == "event_logs_generation" and "generator_params" in run_config:
+            generator_params = run_config.pop("generator_params")
+            run_config["targets"] = generator_params["targets"]
+            run_config["config_space"] = generator_params["config_space"]
+            run_config["system_params"] = {
+                "output_path": run_config.get("output_path"),
+                "n_trials": generator_params["n_trials"],
+            }
+        run_configs.append(run_config)
+    config_file = json.dumps(run_configs, indent=4)
 
     # Streamlit input for output file path
     output_path = st.text_input("Output file path", "config_files/target_config.json")
@@ -393,31 +416,35 @@ if __name__ == '__main__':
             with open(output_path, "w") as f:
                 f.write(config_file)
 
-            command = f"python -W ignore main.py -a {output_path}".split()
+            # Use the exact interpreter running this app rather than relying on a bare
+            # "python" being resolvable on PATH in the subprocess's environment.
+            command = [sys.executable, "-W", "ignore", "main.py", "-a", output_path]
 
-            # Prepare output path for feature extraction
-            directory = Path(step_config['output_path']).parts
-            path = os.path.join(directory[0], 'features', *directory[1:]) # for feature storage
-            path_to_logs = os.path.join(*directory[:]) # for log storage
+            # The generator writes both logs and feature JSONs under <output_path>/<task>/,
+            # with feature JSONs nested one level deeper in a "features" subfolder.
+            path_to_logs = step_config['output_path'] # for log storage
 
             # Clean existing output path if it exists
-            if os.path.exists(path):
-                shutil.rmtree(path)
-
             if os.path.exists(path_to_logs):
                 shutil.rmtree(path_to_logs)
 
-            # Simulate running the command with a loop and update progress
-            with st.spinner("Generating logs.."):
             # Run the actual command
+            with st.spinner("Generating logs.."):
                 result = subprocess.run(command, capture_output=True, text=True)
+
+            if result.returncode != 0:
+                st.error("Generation failed:")
+                st.code(result.stderr or result.stdout, language='text')
+                st.stop()
+
             st.success("Logs generated!")
             st.write("## Results")
 
-            # Collect all file paths from the output directory
+            # Collect all feature JSON file paths from the output directory
             file_paths = [os.path.join(root, file)
-                            for root, _, files in os.walk(path)
-                            for file in files]
+                            for root, _, files in os.walk(path_to_logs)
+                            for file in files
+                            if os.path.basename(root) == 'features']
 
             # Download the generated logs as a ZIP file
             download_file_paths = [os.path.join(root, file)
@@ -441,7 +468,6 @@ if __name__ == '__main__':
 
             # Set 'log' as the index
             dataframes['log'] = dataframes['log'].astype(str)
-            xticks_labels=dataframes['log'].apply(lambda x: x.split('_')[0])#+'_'+x.split('_')[1][:4]+'_'+x.split('_')[2][:4])
             dataframes.set_index('log', inplace=True)
 
             col1, col2 = st.columns([2, 3])
@@ -451,12 +477,12 @@ if __name__ == '__main__':
 
             with col2:
                 plt.figure(figsize=(6, 3))
-                plt.plot(xticks_labels, dataframes['target_similarity'], 'o-')
+                # Use the full (unique, already sorted) log name per point, not just the
+                # shared 'genEL' prefix, so points don't all stack on the same x position.
+                plt.plot(dataframes.index, dataframes['target_similarity'], 'o-')
                 plt.xlabel('Log')
                 plt.ylabel('Target Similarity')
-                if len(dataframes) > 10:
-                    plt.xticks(rotation=30, ha='right')
-                else:
-                    plt.xticks(rotation=0, ha='center')
+                # Full log names are long, so always rotate to keep labels legible.
+                plt.xticks(rotation=45, ha='right')
                 plt.tight_layout()
                 st.pyplot(plt, dpi=400)
