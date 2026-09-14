@@ -1,6 +1,22 @@
 import pytest
 import sys
 
+@pytest.fixture(autouse=True)
+def force_deterministic_smac(monkeypatch):
+    """
+    Running SMAC with n_workers=-1 (all cores) for speed results in undeterministic results.
+    Therefore, we force n_workers=1 for the tests
+    """
+    from gedi.generation import hpo
+
+    original_scenario = hpo.Scenario
+
+    def deterministic_scenario(*args, **kwargs):
+        kwargs["n_workers"] = 1
+        return original_scenario(*args, **kwargs)
+
+    monkeypatch.setattr(hpo, "Scenario", deterministic_scenario)
+
 @pytest.fixture(scope="session", autouse=True)
 def remove_resource_tracker_warnings():
     """

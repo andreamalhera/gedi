@@ -7,8 +7,8 @@ from ConfigSpace import Configuration, ConfigurationSpace
 from datetime import datetime as dt
 from feeed.activities import Activities as activities
 from feeed.end_activities import EndActivities as end_activities
-from feeed.epa_based import Epa_based as epa_based
-from feeed.eventropies import Eventropies as eventropies
+from feeed.complexity.epa_based import Epa_based as epa_based
+from feeed.complexity.eventropies import Eventropies as eventropies
 from feeed.feature_extractor import feature_type
 from feeed.simple_stats import SimpleStats as simple_stats
 from feeed.start_activities import StartActivities as start_activities

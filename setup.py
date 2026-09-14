@@ -4,7 +4,7 @@ import os
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-version_string = os.environ.get("VERSION_PLACEHOLDER", "1.9.0")
+version_string = os.environ.get("VERSION_PLACEHOLDER", "1.10.0")
 print(version_string)
 version = version_string
 
@@ -20,14 +20,14 @@ setup(
         long_description=long_description,
         long_description_content_type="text/markdown",
 
-        python_requires='>=3.9, <3.14',
+        python_requires='>=3.9, <3.15',
 
         include_package_data=True,
         install_requires=[
             'pandas==2.2.3',
             'numpy>=1.26.4',
             'ConfigSpace==1.2.0',
-            'feeed>=2.0.0',
+            'feeed>=2.1.0',
             'smac==2.4.0',
             'seaborn==0.13.2',
             'scipy>=1.14.1',

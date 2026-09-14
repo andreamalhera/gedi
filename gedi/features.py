@@ -8,8 +8,13 @@ from datetime import datetime as dt
 from functools import partial
 from feeed.activities import Activities as activities
 from feeed.end_activities import EndActivities as end_activities
-from feeed.epa_based import Epa_based as epa_based
-from feeed.eventropies import Eventropies as eventropies
+from feeed.complexity.epa_based import Epa_based as epa_based
+from feeed.complexity.eventropies import Eventropies as eventropies
+from feeed.complexity.comparison_based import ComparisonBased as comparison_based
+from feeed.complexity.dfg_based import DFGBased as dfg_based
+from feeed.complexity.trace_diversity import TraceDiversity as trace_diversity
+from feeed.complexity.distinct_activities import DistinctActivities as distinct_activities
+from feeed.complexity.repetitions import Repetitions as repetitions
 from feeed.feature_extractor import extract_features
 from feeed.feature_extractor import feature_type, read_pm4py_log
 from feeed.simple_stats import SimpleStats as simple_stats
