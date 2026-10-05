@@ -163,17 +163,21 @@ class GediTask():
         return tasks, system_params
 
     def generator_wrapper(self, task, embedded_generator = None, config_space = None, system_params = None):
-        output_path = system_params.get(OUTPUT_PATH) if system_params.get(OUTPUT_PATH) is not None else self.output_path
-        embedded_generator = embedded_generator(config_space) if embedded_generator is not None else PTLGenerator(config_space)
-        hpo_task = self.HPOTask(task, embedded_generator)
-        configs = hpo_task.optimize(system_params)
-        objectives = dict(sorted(task[1].drop('log', errors='ignore').to_dict().items()))
-        random.seed(RANDOM_SEED)
-        generated_features = embedded_generator.generate_optimized_log(config=configs,
-                                                                       output_path=output_path,
-                                                                       objectives=objectives,
-                                                                       identifier = hpo_task.identifier)
-        return generated_features
+        try:
+            output_path = system_params.get(OUTPUT_PATH) if system_params.get(OUTPUT_PATH) is not None else self.output_path
+            embedded_generator = embedded_generator(config_space) if embedded_generator is not None else PTLGenerator(config_space)
+            hpo_task = self.HPOTask(task, embedded_generator)
+            configs = hpo_task.optimize(system_params)
+            objectives = dict(sorted(task[1].drop('log', errors='ignore').to_dict().items()))
+            random.seed(RANDOM_SEED)
+            generated_features = embedded_generator.generate_optimized_log(config=configs,
+                                                                           output_path=output_path,
+                                                                           objectives=objectives,
+                                                                           identifier = hpo_task.identifier)
+            return generated_features
+        except Exception as e:
+            print(f"ERROR: Skipping target {task[1].drop('log', errors='ignore').to_dict()}: {type(e).__name__}: {e}")
+            return {}
 
 
     class HPOTask():

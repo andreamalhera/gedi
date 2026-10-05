@@ -105,3 +105,43 @@ def test_abbr_GediTask():
     AGREEMENT_THRESHOLD = 0.75
     agreement = sum(1 for o, u in zip(similarities, VALIDATION_OUTPUT) if abs(o-u)<=0.1) / len(VALIDATION_OUTPUT) * 100
     assert agreement >= AGREEMENT_THRESHOLD
+
+def test_generator_wrapper_skips_failing_target(monkeypatch):
+    """So that one bad target can't take down the whole multiprocessing.Pool.map() run 
+    (see GediTask.__init__, which filters results on 'features' in config)."""
+    def failing_optimize(self, system_params):
+        raise RuntimeError("simulated failure")
+    monkeypatch.setattr(GediTask.HPOTask, "optimize", failing_optimize)
+
+    task_instance = object.__new__(GediTask)
+    task_instance.output_path = "output"
+    task = (0, pd.Series({"ratio_top_20_variants": 0.2, "log": "dummy"}))
+
+    result = task_instance.generator_wrapper(
+        task,
+        embedded_generator=PTLGenerator,
+        config_space={'mode': [5, 20], 'sequence': [0.01, 1], 'choice': [0.01, 1], 'parallel': [0.01, 1],
+                      'loop': [0.01, 1], 'silent': [0.01, 1], 'lt_dependency': [0.01, 1], 'num_traces': [10, 100],
+                      'duplicate': [0], 'or': [0]},
+        system_params={'n_trials': 2})
+
+    assert result == {}
+
+def test_GediTask_skips_unknown_feature_target():
+    """So that a target with an unknown feature (i.e., one that is not in
+    feeed.feature_extractor.feature_type) doesn't crash the whole GediTask run.
+    The other, valid target must still produce results."""
+    INPUT_PARAMS = {'targets': [
+                        {'ratio_top_20_variants': 0.2},
+                        {'this_feature_does_not_exist_xyz': 0.5},
+                    ],
+                    'config_space': {'mode': [5, 20], 'sequence': [0.01, 1], 'choice': [0.01, 1], 'parallel': [0.01, 1],
+                                     'loop': [0.01, 1], 'silent': [0.01, 1], 'lt_dependency': [0.01, 1], 'num_traces': [10, 10001],
+                                     'duplicate': [0], 'or': [0]},
+                    'system_params': {'n_trials': 2}}
+    genED = GediTask(INPUT_PARAMS,
+                     embedded_generator = PTLGenerator,
+                     targets = INPUT_PARAMS.get(TARGETS))
+
+    assert len(genED.generated_features) == 1
+    assert 'ratio_top_20_variants' in genED.generated_features[0]['features']
