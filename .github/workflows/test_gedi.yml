@@ -13,6 +13,10 @@ on:
 jobs:
   test_feature_computation:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.13", "3.14"]
 
     # Setting up a python envronment  for the test script to run
     steps:
@@ -22,7 +26,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: 3.13
+        python-version: ${{ matrix.python-version }}
 
     - name: Install local package
       run: |
@@ -39,6 +43,10 @@ jobs:
 
   test_generation:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.13", "3.14"]
 
     # Setting up a python envronment  for the test script to run
     steps:
@@ -48,7 +56,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: 3.13
+        python-version: ${{ matrix.python-version }}
 
     - name: Install local package
       run: |
@@ -65,6 +73,10 @@ jobs:
 
   test_benchmark:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.13", "3.14"]
 
     # Setting up a python envronment  for the test script to run
     steps:
@@ -74,7 +86,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: 3.13
+        python-version: ${{ matrix.python-version }}
 
     - name: Install locally
       run: |
@@ -95,6 +107,10 @@ jobs:
 
   test_augmentation:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.13", "3.14"]
 
     # Setting up a python envronment  for the test script to run
     steps:
@@ -104,7 +120,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: 3.13
+        python-version: ${{ matrix.python-version }}
 
     - name: Install locally
       run: |
@@ -117,6 +133,10 @@ jobs:
 
   test_evaluation-plotter:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.13", "3.14"]
 
     # Setting up a python envronment  for the test script to run
     steps:
@@ -126,7 +146,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: 3.13
+        python-version: ${{ matrix.python-version }}
 
     - name: Install dependencies
       run: |
@@ -143,6 +163,10 @@ jobs:
 
   test_integration:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.13", "3.14"]
 
     # Setting up a python envronment  for the test script to run
     steps:
@@ -152,7 +176,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: 3.13
+        python-version: ${{ matrix.python-version }}
 
     - name: Install dependencies
       run: |
@@ -169,6 +193,10 @@ jobs:
 
   test_grid_experiments_script:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.13", "3.14"]
 
     # Setting up a python envronment  for the test script to run
     steps:
@@ -178,7 +206,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: 3.13
+        python-version: ${{ matrix.python-version }}
 
     - name: Install dependencies
       run: |
