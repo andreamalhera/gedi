@@ -20,14 +20,14 @@ setup(
         long_description=long_description,
         long_description_content_type="text/markdown",
 
-        python_requires='>=3.9, <3.15',
+        python_requires='>=3.10, <3.15',
 
         include_package_data=True,
         install_requires=[
-            'pandas==2.2.3',
+            'pandas==2.3.3',
             'numpy>=1.26.4',
             'ConfigSpace==1.2.0',
-            'feeed>=2.1.0',
+            'feeed>=2.2.0',
             'smac==2.4.0',
             'seaborn==0.13.2',
             'scipy>=1.14.1',
