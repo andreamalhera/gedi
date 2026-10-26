@@ -24,6 +24,7 @@ from gedi.utils.io_helpers import read_csvs
 from gedi.utils.param_keys import OUTPUT_PATH, INPUT_PATH
 from gedi.utils.param_keys.generator import GENERATOR_PARAMS, TARGETS, CONFIG_SPACE
 from gedi.utils.param_keys.generator import N_TRIALS, GENERATOR, GENERATOR_TYPE, SYSTEM_PARAMS
+from gedi.utils.target_validation import validate_target
 from functools import partial
 
 RANDOM_SEED = 10
@@ -92,8 +93,12 @@ class GediTask():
 
         tasks, system_params = self.setup_GediTask(targets = targets,
                                                       system_params = system_params)
+        tasks = self.validate_tasks(tasks, config_space)
         start = dt.now()
-        if True: #try:
+        if tasks.empty:
+            self.generated_features = []
+            print("ERROR: No valid targets left to generate. See errors above.")
+        else: #try:
             self.feature_keys = sorted([feature for feature in tasks.columns.tolist() if feature != "log"])
             num_cores = multiprocessing.cpu_count() if len(tasks) >= multiprocessing.cpu_count() else len(tasks)
             #NOTE FOR DEBUGGING USE THE LINE BELOW
@@ -161,6 +166,19 @@ class GediTask():
         tasks = tasks.rename(columns=columns_to_rename)
         self.output_path = output_path
         return tasks, system_params
+
+    def validate_tasks(self, tasks, config_space = None):
+        valid_rows = []
+        for index, row in tasks.iterrows():
+            target = row.drop('log', errors='ignore').to_dict()
+            errors, target_warnings = validate_target(target, config_space)
+            for warning in target_warnings:
+                print(f"WARNING: Target {target}: {warning}")
+            if errors:
+                print(f"ERROR: Skipping target {target}: {' '.join(errors)}")
+            else:
+                valid_rows.append(index)
+        return tasks.loc[valid_rows]
 
     def generator_wrapper(self, task, embedded_generator = None, config_space = None, system_params = None):
         try:

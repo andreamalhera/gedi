@@ -6,7 +6,7 @@ import re
 import shutil
 import numpy as np
 from collections import defaultdict
-from gedi.utils.param_keys.features import bpic_feature_values
+from gedi.utils.target_validation import feature_similarity, is_numeric
 from pathlib import PurePath
 from scipy.spatial.distance import euclidean
 
@@ -54,14 +54,16 @@ def get_keys_abbreviation(obj_keys):
         abbreviated_keys.append(abbreviated_key)
     return '_'.join(abbreviated_keys)
 
-def get_output_key_value_location(obj, output_path, identifier):
+def get_generated_file_name(obj, identifier):
     obj_sorted = dict(sorted(obj.items()))
-    obj_keys = [*obj_sorted.keys()]
-    folder_path = os.path.join(output_path, f"{len(obj_keys)}_{get_keys_abbreviation(obj_keys)}")
-
     obj_values = [round(x, 4) for x in [*obj_sorted.values()]]
     obj_values_joined = '_'.join(map(str, obj_values)).replace('.', '')
-    generated_file_name = f"{identifier}_{obj_values_joined}"
+    return f"{identifier}_{obj_values_joined}"
+
+def get_output_key_value_location(obj, output_path, identifier):
+    obj_keys = sorted(obj.keys())
+    folder_path = os.path.join(output_path, f"{len(obj_keys)}_{get_keys_abbreviation(obj_keys)}")
+    generated_file_name = get_generated_file_name(obj, identifier)
 
     os.makedirs(folder_path, exist_ok=True)
     save_path = os.path.join(folder_path, generated_file_name)
@@ -86,36 +88,24 @@ def dump_features_json(features: dict, output_path, objectives=None, content_typ
         json.dump(features, fp, default=int)
         print(f"SUCCESS: Saved {len(features)-2} {content_type} in {json_path}")#-2 because 'log' and 'target_similarities' are not features
 
-def normalize_value(value, min_val, max_val):
-    return (value - min_val) / (max_val - min_val) if max_val != min_val else 0.0
+def compute_feature_similarities(v1, v2):
+    """
+    Returns {feature: similarity in [0, 1]} for each feature shared by v1 and v2.
+    Bounded features ([0, 1]) use 1 - absolute difference, unbounded ones 1 - symmetric relative difference.
+    """
+    # Identify common numeric keys, skipping NaNs (features a target leaves unset)
+    common_keys = set(v1.keys()).intersection(set(v2.keys())) - {"log", "target_similarity"}
+    numeric_keys = [k for k in sorted(common_keys) if is_numeric(v1[k]) and is_numeric(v2[k])]
+
+    return {key: feature_similarity(key, float(v1[key]), float(v2[key])) for key in numeric_keys}
 
 def compute_similarity(v1, v2):
-    feature_ranges = bpic_feature_values()
+    similarities = compute_feature_similarities(v1, v2)
 
-    # Convert all values to float except for the "log" key
-    v1 = {k: (float(v) if k != "log" else v) for k, v in v1.items()}
-    v2 = {k: (float(v) if k != "log" else v) for k, v in v2.items()}
-
-    # Identify common numeric keys
-    common_keys = set(v1.keys()).intersection(set(v2.keys()), set(feature_ranges.keys()))
-    numeric_keys = [k for k in common_keys if isinstance(v1[k], (int, float)) and isinstance(v2[k], (int, float))]
-
-    if not numeric_keys:
+    if not similarities:
         print("[ERROR]: No common numeric keys found for similarity calculation.")
         return None
 
-    # Normalize values and compute differences
-    differences = []
-    for key in numeric_keys:
-        min_val, max_val = feature_ranges[key]
-        for v in (v1, v2):
-            if not min_val <= v[key] <= max_val:
-                print(f"[WARNING]: {key}={v[key]} is outside the expected range [{min_val}, {max_val}]. Clipping for similarity calculation.")
-        # Clip so target_similarity stays within [0, 1]
-        norm_v1 = np.clip(normalize_value(v1[key], min_val, max_val), 0.0, 1.0)
-        norm_v2 = np.clip(normalize_value(v2[key], min_val, max_val), 0.0, 1.0)
-        differences.append(abs(norm_v1 - norm_v2))
-
-    # Compute average difference as similarity metric
-    target_similarity = 1 - np.mean(differences)
+    # Average of per-feature similarities
+    target_similarity = float(np.mean(list(similarities.values())))
     return target_similarity
