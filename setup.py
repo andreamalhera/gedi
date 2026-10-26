@@ -24,7 +24,7 @@ setup(
 
         include_package_data=True,
         install_requires=[
-            'pandas==2.2.3',
+            'pandas==2.3.3',
             'numpy>=1.26.4',
             'ConfigSpace==1.2.0',
             'feeed>=2.2.0',
