@@ -108,8 +108,12 @@ def compute_similarity(v1, v2):
     differences = []
     for key in numeric_keys:
         min_val, max_val = feature_ranges[key]
-        norm_v1 = normalize_value(v1[key], min_val, max_val)
-        norm_v2 = normalize_value(v2[key], min_val, max_val)
+        for v in (v1, v2):
+            if not min_val <= v[key] <= max_val:
+                print(f"[WARNING]: {key}={v[key]} is outside the expected range [{min_val}, {max_val}]. Clipping for similarity calculation.")
+        # Clip so target_similarity stays within [0, 1]
+        norm_v1 = np.clip(normalize_value(v1[key], min_val, max_val), 0.0, 1.0)
+        norm_v2 = np.clip(normalize_value(v2[key], min_val, max_val), 0.0, 1.0)
         differences.append(abs(norm_v1 - norm_v2))
 
     # Compute average difference as similarity metric

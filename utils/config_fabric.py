@@ -159,7 +159,7 @@ def create_objectives_grid(df, objectives, n_para_obj=2, method="combinatorial")
             tasks=""
             if objectives != None:
                 cross_labels =  [feature[0]+': '+feature[1] for feature in list(cproduct(objectives,['min', 'max', 'step']))]
-                cross_values = [round(eval(str(combination[0])+combination[1]), 2) for combination in list(cproduct(list(df.values()), ['*1', '*2', '/3']))]
+                cross_values = [round(eval(str(combination[0])+combination[1]), 2) for combination in list(cproduct([df[objective] for objective in objectives], ['*1', '*2', '/3']))]
                 ranges = zip(objectives, split_list(list(input_multicolumn(cross_labels, cross_values, n_cols=3)), n_para_obj))
                 for objective, range_value in ranges:
                     selcted_min, selcted_max, step_value = range_value
