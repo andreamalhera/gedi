@@ -4,9 +4,18 @@ from gedi.run import gedi
 from gedi.generation.generator import PTLGenerator
 from gedi.generation.hpo import GediTask, GenerateEventLogs
 from gedi.utils.io_helpers import compute_similarity
-from gedi.utils.target_validation import validate_target
+from gedi.utils.target_validation import fit_window, validate_target
 from gedi.utils.param_keys.features import FEATURE_SET, FEATURE_PARAMS
 from gedi.utils.param_keys.generator import TARGETS, CONFIG_SPACE, SYSTEM_PARAMS, GENERATOR_PARAMS
+
+AGREEMENT_THRESHOLD = 0.75
+
+def assert_similarities(similarities, expected_windows):
+    # Generation is not reproducible between runs, so each expected value is a (low, high) window
+    assert len(similarities) == len(expected_windows)
+    assert all(0.0 <= s <= 1.0 for s in similarities)
+    agreement = sum(1 for s, (low, high) in zip(similarities, expected_windows) if low <= s <= high) / len(expected_windows)
+    assert agreement >= AGREEMENT_THRESHOLD
 
 def test_GediTask_args():
     INPUT_PARAMS = {'targets': {'input_path': 'data/test/grid_feat.csv',
@@ -19,7 +28,7 @@ def test_GediTask_args():
                                                     'duplicate': [0], 'or': [0]},
                           'system_params': {'n_trials': 50}
                         }
-    VALIDATION_OUTPUT = [0.89, 0.7, 0.89, 1.0]
+    VALIDATION_OUTPUT = [(0.86, 1.0), (0.73, 0.86), (0.82, 1.0), (1.0, 1.0)]
     genED = GediTask(INPUT_PARAMS,
                      embedded_generator = PTLGenerator,
                      targets = INPUT_PARAMS.get(TARGETS),
@@ -27,26 +36,20 @@ def test_GediTask_args():
                      system_params = INPUT_PARAMS.get(SYSTEM_PARAMS))
     similarities = [round(target['features']['target_similarity'], 2) for target in genED.generated_features]
 
-    assert len(similarities) == len(VALIDATION_OUTPUT)
-    AGREEMENT_THRESHOLD = 0.75
-    agreement = sum(1 for o, u in zip(similarities, VALIDATION_OUTPUT) if o == u) / len(VALIDATION_OUTPUT) * 100
-    assert agreement >= AGREEMENT_THRESHOLD
+    assert_similarities(similarities, VALIDATION_OUTPUT)
 
 def test_GediTask():
     INPUT_PARAMS = {'targets': {'input_path': 'data/test/grid_feat.csv',
                                 'objectives': ['ratio_top_20_variants',
                                                'epa_normalized_sequence_entropy_linear_forgetting']}
                     }
-    VALIDATION_OUTPUT = [0.89, 0.7, 0.89, 1.0]
+    VALIDATION_OUTPUT = [(0.86, 1.0), (0.66, 0.81), (0.86, 0.97), (1.0, 1.0)]
     genED = GediTask(INPUT_PARAMS,
                      embedded_generator = PTLGenerator,
                      targets = INPUT_PARAMS.get(TARGETS))
     similarities = [round(target['features']['target_similarity'], 2) for target in genED.generated_features]
 
-    assert len(similarities) == len(VALIDATION_OUTPUT)
-    AGREEMENT_THRESHOLD = 0.75
-    agreement = sum(1 for o, u in zip(similarities, VALIDATION_OUTPUT) if o == u) / len(VALIDATION_OUTPUT) * 100
-    assert agreement >= AGREEMENT_THRESHOLD
+    assert_similarities(similarities, VALIDATION_OUTPUT)
 
 def test_GediTask_103_compatibility():
     INPUT_PARAMS = {'generator_params': {'experiment': {'input_path': 'data/test/grid_feat.csv',
@@ -58,14 +61,11 @@ def test_GediTask_103_compatibility():
                                                           'lt_dependency': [0.01, 1], 'num_traces': [10, 10001],
                                                           'duplicate': [0], 'or': [0]},
                                          'n_trials': 50}}
-    VALIDATION_OUTPUT = [0.89, 0.7, 0.89, 1.0]
+    VALIDATION_OUTPUT = [(0.87, 1.0), (0.74, 0.85), (0.86, 1.0), (1.0, 1.0)]
     genED = GediTask(INPUT_PARAMS)
     similarities = [round(target['features']['target_similarity'], 2) for target in genED.generated_features]
 
-    assert len(similarities) == len(VALIDATION_OUTPUT)
-    AGREEMENT_THRESHOLD = 0.75
-    agreement = sum(1 for o, u in zip(similarities, VALIDATION_OUTPUT) if o == u) / len(VALIDATION_OUTPUT) * 100
-    assert agreement >= AGREEMENT_THRESHOLD
+    assert_similarities(similarities, VALIDATION_OUTPUT)
 
 def test_GediTask_pypible():
     INPUT_PARAMS =  {'targets':[
@@ -80,16 +80,13 @@ def test_GediTask_pypible():
                                         'lt_dependency': [0.01, 1], 'num_traces': [10, 10001],
                                         'duplicate': [0], 'or': [0]},
                         'system_params': {'n_trials': 50}}
-    VALIDATION_OUTPUT = [0.89, 0.7, 0.89, 1.0]
+    VALIDATION_OUTPUT = [(0.88, 1.0), (0.66, 0.84), (0.85, 0.98), (1.0, 1.0)]
     genED = GediTask(INPUT_PARAMS,
                      embedded_generator = PTLGenerator,
                      targets = INPUT_PARAMS.get(TARGETS))
     similarities = [round(target['features']['target_similarity'], 2) for target in genED.generated_features]
 
-    assert len(similarities) == len(VALIDATION_OUTPUT)
-    AGREEMENT_THRESHOLD = 0.75
-    agreement = sum(1 for o, u in zip(similarities, VALIDATION_OUTPUT) if o == u) / len(VALIDATION_OUTPUT) * 100
-    assert agreement >= AGREEMENT_THRESHOLD
+    assert_similarities(similarities, VALIDATION_OUTPUT)
 
 def test_abbr_GediTask():
     INPUT_PARAMS = {'targets': {'input_path': 'data/test/igedi_table_1.csv',
@@ -98,15 +95,13 @@ def test_abbr_GediTask():
                                      'loop': [0.01, 1], 'silent': [0.01, 1], 'lt_dependency': [0.01, 1], 'num_traces': [10, 10001],
                                      'duplicate': [0], 'or': [0]},
                     'system_params': {'n_trials': 2}}
-    VALIDATION_OUTPUT = [0.9, 0.7, 0.7]
+    VALIDATION_OUTPUT = [(1.0, 1.0), (0.6, 1.0), (0.6, 1.0)]
     genED = GediTask(INPUT_PARAMS,
                      embedded_generator = PTLGenerator,
                      targets = INPUT_PARAMS.get(TARGETS))
     similarities = [round(target['features']['target_similarity'], 1) for target in genED.generated_features]
-    assert len(similarities) == len(VALIDATION_OUTPUT)
-    AGREEMENT_THRESHOLD = 0.75
-    agreement = sum(1 for o, u in zip(similarities, VALIDATION_OUTPUT) if abs(o-u)<=0.1) / len(VALIDATION_OUTPUT) * 100
-    assert agreement >= AGREEMENT_THRESHOLD
+
+    assert_similarities(similarities, VALIDATION_OUTPUT)
 
 def test_generator_wrapper_skips_failing_target(monkeypatch):
     """So that one bad target can't take down the whole multiprocessing.Pool.map() run 
@@ -164,6 +159,14 @@ def test_validate_target():
     errors, warnings = validate_target({'log': 'BPI_2012', 'ratio_top_20_variants': 0.4,
                                         'epa_normalized_sequence_entropy_linear_forgetting': float('nan')}, CONFIG_SPACE)
     assert errors == [] and warnings == []
+
+def test_fit_window():
+    # Unbounded features keep the window as is
+    assert fit_window('n_traces', 832, 832) == (832, 1664)
+    # Bounded features shift back into [0, 1], or shrink to it if the window is too wide
+    assert fit_window('ratio_variants_per_number_of_traces', 0.99, 0.2) == pytest.approx((0.8, 1.0))
+    assert fit_window('ratio_variants_per_number_of_traces', 0.99, 1.5) == (0.0, 1.0)
+    assert fit_window('epa_normalized_sequence_entropy', 0.39, 0.39) == (0.39, 0.78)
 
 def test_compute_similarity():
     # Bounded features: 1 - absolute difference, also beyond the range observed in BPIC logs

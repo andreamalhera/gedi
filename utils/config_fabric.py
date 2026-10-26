@@ -24,7 +24,7 @@ from feeed.feature_extractor import extract_features
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from gedi.utils.io_helpers import compute_feature_similarities, get_generated_file_name
-from gedi.utils.target_validation import is_numeric, validate_target
+from gedi.utils.target_validation import fit_window, is_numeric, validate_target
 os.getppid = _real_getppid
 
 st.set_page_config(layout='wide')
@@ -129,6 +129,15 @@ def split_list(input_list, n):
     # Use list comprehension to create n sublists
     return [input_list[i * k + min(i, m):(i + 1) * k + min(i + 1, m)] for i in range(n)]
 
+def default_values(feature, value, n):
+    low, high = fit_window(feature, value, 0.2 * value * (n - 1))
+    return [round(float(v), 2) for v in np.linspace(low, high, n)]
+
+def default_range(feature, value):
+    low, high = fit_window(feature, value, value)
+    step = math.floor((high - low) / 3 * 100) / 100 or round((high - low) / 3, 4)
+    return [round(low, 2), round(high, 2), step]
+
 def get_ranges_from_stats(stats, tuple_values):
     col_for_row = ", ".join([f"x[\'{i}\'].astype(float)" for i in tuple_values])
     stats['range'] = stats.apply(lambda x: tuple([eval(col_for_row)]), axis=1)
@@ -155,17 +164,17 @@ def create_objectives_grid(df, objectives, n_para_obj=2, method="combinatorial")
                     selcted_max = st.slider('max', min_value=selcted_min, max_value=float(df[objective].max()), value=df[objective].quantile(0.9), step=0.1, key=objective+"max")
                 with step_col:
                     step_value = st.slider('step', min_value=float(df[objective].min()), max_value=float(df[objective].quantile(0.9)), value=df[objective].median()/(df[objective].min()+0.0001), step=0.01, key=objective+"step")
-                tasks += f"np.around(np.arange({selcted_min}, {selcted_max}+{step_value}, {step_value}),2), "
+                tasks += f"np.around(np.arange({selcted_min}, {selcted_max}+{step_value}/2, {step_value}),2), "
         else :#method=="range-manual":
             experitments = []
             tasks=""
             if objectives != None:
                 cross_labels =  [feature[0]+': '+feature[1] for feature in list(cproduct(objectives,['min', 'max', 'step']))]
-                cross_values = [round(eval(str(combination[0])+combination[1]), 2) for combination in list(cproduct([df[objective] for objective in objectives], ['*1', '*2', '/3']))]
+                cross_values = [value for objective in objectives for value in default_range(objective, df[objective])]
                 ranges = zip(objectives, split_list(list(input_multicolumn(cross_labels, cross_values, n_cols=3)), n_para_obj))
                 for objective, range_value in ranges:
                     selcted_min, selcted_max, step_value = range_value
-                    tasks += f"np.around(np.arange({selcted_min}, {selcted_max}+{step_value}, {step_value}),2), "
+                    tasks += f"np.around(np.arange({selcted_min}, {selcted_max}+{step_value}/2, {step_value}),2), "
 
         try:
             cartesian_product = list(cproduct(*eval(tasks)))
@@ -258,11 +267,10 @@ def set_generator_targets(generator_params):
                 with col2:
                     sel_features = feature_select()
 
-                filtered_dict = {key: generator_params['targets'][key] for key in sel_features if key in generator_params['targets']}
                 values_indexes = ["value "+str(i+1) for i in range(num_values)]
-                values_defaults = ['*(1+2*0.'+str(i)+')' for i in range(num_values)]
                 cross_labels =  [feature[0]+': '+feature[1] for feature in list(cproduct(sel_features,values_indexes))]
-                cross_values = [round(eval(str(combination[0])+combination[1]), 2) for combination in list(cproduct(list(filtered_dict.values()), values_defaults))]
+                cross_values = [value for feature in sel_features
+                                for value in default_values(feature, generator_params['targets'][feature], num_values)]
                 parameters = split_list(list(input_multicolumn(cross_labels, cross_values, n_cols=num_values)), len(sel_features))
                 tasks = f"list({parameters})"
 

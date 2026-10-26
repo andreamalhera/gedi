@@ -1,12 +1,23 @@
 import math
 import numbers
 
-def is_unit_interval_feature(feature):
+def feature_bounds(feature):
     # Ratios and normalized entropies are bounded to [0, 1] by definition.
-    return feature.startswith("ratio_") or feature.startswith("epa_normalized_")
+    if feature.startswith("ratio_") or feature.startswith("epa_normalized_"):
+        return 0.0, 1.0
+    if "skewness" in feature or "kurtosis" in feature or feature.startswith("eventropy_k_block_diff"):
+        return -math.inf, math.inf
+    return 0.0, math.inf
 
-def can_be_negative(feature):
-    return "skewness" in feature or "kurtosis" in feature or feature.startswith("eventropy_k_block_diff")
+def is_unit_interval_feature(feature):
+    return feature_bounds(feature) == (0.0, 1.0)
+
+def fit_window(feature, start, width):
+    # Shifts [start, start + width] into the feature's bounds, shrinking it only if it doesn't fit
+    low, high = feature_bounds(feature)
+    width = min(width, high - low)
+    start = min(max(start, low), high - width)
+    return start, start + width
 
 def is_numeric(value):
     # numbers.Real also covers numpy scalars such as np.int64 from feature extraction
@@ -28,10 +39,9 @@ def validate_target(target, config_space=None):
     numeric_target = {k: float(v) for k, v in target.items() if k != "log" and is_numeric(v)}
 
     for feature, value in numeric_target.items():
-        if is_unit_interval_feature(feature) and not 0.0 <= value <= 1.0:
-            errors.append(f"{feature}={value} is outside its possible range [0, 1].")
-        elif value < 0 and not can_be_negative(feature):
-            errors.append(f"{feature}={value} cannot be negative.")
+        low, high = feature_bounds(feature)
+        if not low <= value <= high:
+            errors.append(f"{feature}={value} is outside its possible range [{low:g}, {high:g}].")
 
     if "n_variants" in numeric_target and "n_traces" in numeric_target \
             and numeric_target["n_variants"] > numeric_target["n_traces"]:
