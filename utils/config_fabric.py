@@ -21,6 +21,10 @@ import sys
 _real_getppid = os.getppid
 os.getppid = os.getpid
 from feeed.feature_extractor import extract_features
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from gedi.utils.io_helpers import compute_feature_similarities, get_generated_file_name
+from gedi.utils.target_validation import fit_window, is_numeric, validate_target
 os.getppid = _real_getppid
 
 st.set_page_config(layout='wide')
@@ -32,10 +36,8 @@ def get_base64_image(image_path):
         return base64.b64encode(image_file.read()).decode()
 
 def play_header():
-    # Convert local image to base64
     logo_base64 = get_base64_image(LOGO_PATH)
 
-    # HTML and CSS for placing the logo at the top left corner
     head1, head2 = st.columns([1,8])
     head1.markdown(
         f"""
@@ -127,6 +129,15 @@ def split_list(input_list, n):
     # Use list comprehension to create n sublists
     return [input_list[i * k + min(i, m):(i + 1) * k + min(i + 1, m)] for i in range(n)]
 
+def default_values(feature, value, n):
+    low, high = fit_window(feature, value, 0.2 * value * (n - 1))
+    return [round(float(v), 2) for v in np.linspace(low, high, n)]
+
+def default_range(feature, value):
+    low, high = fit_window(feature, value, value)
+    step = math.floor((high - low) / 3 * 100) / 100 or round((high - low) / 3, 4)
+    return [round(low, 2), round(high, 2), step]
+
 def get_ranges_from_stats(stats, tuple_values):
     col_for_row = ", ".join([f"x[\'{i}\'].astype(float)" for i in tuple_values])
     stats['range'] = stats.apply(lambda x: tuple([eval(col_for_row)]), axis=1)
@@ -153,17 +164,17 @@ def create_objectives_grid(df, objectives, n_para_obj=2, method="combinatorial")
                     selcted_max = st.slider('max', min_value=selcted_min, max_value=float(df[objective].max()), value=df[objective].quantile(0.9), step=0.1, key=objective+"max")
                 with step_col:
                     step_value = st.slider('step', min_value=float(df[objective].min()), max_value=float(df[objective].quantile(0.9)), value=df[objective].median()/(df[objective].min()+0.0001), step=0.01, key=objective+"step")
-                tasks += f"np.around(np.arange({selcted_min}, {selcted_max}+{step_value}, {step_value}),2), "
+                tasks += f"np.around(np.arange({selcted_min}, {selcted_max}+{step_value}/2, {step_value}),2), "
         else :#method=="range-manual":
             experitments = []
             tasks=""
             if objectives != None:
                 cross_labels =  [feature[0]+': '+feature[1] for feature in list(cproduct(objectives,['min', 'max', 'step']))]
-                cross_values = [round(eval(str(combination[0])+combination[1]), 2) for combination in list(cproduct(list(df.values()), ['*1', '*2', '/3']))]
+                cross_values = [value for objective in objectives for value in default_range(objective, df[objective])]
                 ranges = zip(objectives, split_list(list(input_multicolumn(cross_labels, cross_values, n_cols=3)), n_para_obj))
                 for objective, range_value in ranges:
                     selcted_min, selcted_max, step_value = range_value
-                    tasks += f"np.around(np.arange({selcted_min}, {selcted_max}+{step_value}, {step_value}),2), "
+                    tasks += f"np.around(np.arange({selcted_min}, {selcted_max}+{step_value}/2, {step_value}),2), "
 
         try:
             cartesian_product = list(cproduct(*eval(tasks)))
@@ -256,11 +267,10 @@ def set_generator_targets(generator_params):
                 with col2:
                     sel_features = feature_select()
 
-                filtered_dict = {key: generator_params['targets'][key] for key in sel_features if key in generator_params['targets']}
                 values_indexes = ["value "+str(i+1) for i in range(num_values)]
-                values_defaults = ['*(1+2*0.'+str(i)+')' for i in range(num_values)]
                 cross_labels =  [feature[0]+': '+feature[1] for feature in list(cproduct(sel_features,values_indexes))]
-                cross_values = [round(eval(str(combination[0])+combination[1]), 2) for combination in list(cproduct(list(filtered_dict.values()), values_defaults))]
+                cross_values = [value for feature in sel_features
+                                for value in default_values(feature, generator_params['targets'][feature], num_values)]
                 parameters = split_list(list(input_multicolumn(cross_labels, cross_values, n_cols=num_values)), len(sel_features))
                 tasks = f"list({parameters})"
 
@@ -321,6 +331,17 @@ def set_generator_targets(generator_params):
         generator_params['config_space'][key] = eval(new_value)
     generator_params['n_trials'] = int(st.text_input('n_trials', generator_params['n_trials']))
 
+    # For features' possible ranges and the configuration space.
+    target_errors, target_warnings = {}, {}
+    for target in generator_params['targets']:
+        errors, warnings = validate_target(target, generator_params['config_space'])
+        target_errors.update(dict.fromkeys(errors))
+        target_warnings.update(dict.fromkeys(warnings))
+    for error in target_errors:
+        st.error(f"{error} Targets with this value will be skipped.")
+    for warning in target_warnings:
+        st.warning(warning)
+
     return generator_params
 
 def sort_key(val):
@@ -329,6 +350,52 @@ def sort_key(val):
     # get (39.0,), or from 'genEL_047_nan' (a multi-objective target missing one dimension)
     # get (47.0, nan). float() parses both regular numbers and the literal 'nan' segment.
     return tuple(float(part) for part in parts[1:])
+
+def match_logs_to_targets(targets):
+    log_targets = {}
+    for _, task in pd.DataFrame(targets).iterrows():
+        identifiers = [x for x in task if isinstance(x, str)]
+        identifier = "genEL" + (identifiers[0] if identifiers else "")
+        objectives = dict(sorted(task.drop('log', errors='ignore').to_dict().items()))
+        log_targets[get_generated_file_name(objectives, identifier)] = objectives
+    return log_targets
+
+def plot_feasibility_heatmap(dataframes, targets):
+    log_targets = match_logs_to_targets(targets)
+    features = sorted({k for target in log_targets.values() for k, v in target.items() if is_numeric(v)})
+    columns = features + ['target_similarity']
+
+    similarities = pd.DataFrame(np.nan, index=dataframes.index, columns=columns)
+    for log, generated in dataframes.iterrows():
+        target = log_targets.get(log, {})
+        for feature, similarity in compute_feature_similarities(target, generated.to_dict()).items():
+            similarities.loc[log, feature] = similarity
+    similarities['target_similarity'] = dataframes['target_similarity']
+
+    n_logs, n_cols = similarities.shape
+    cmap = plt.get_cmap('RdYlGn').copy()
+    cmap.set_bad('lightgray')
+    label_width = 0.07 * max(len(log) for log in similarities.index)
+    label_height = 0.05 * max(len(feature) for feature in columns)
+    fig, ax = plt.subplots(figsize=(2 + label_width + 0.8 * n_cols, 1.5 + label_height + 0.4 * n_logs))
+    image = ax.imshow(np.ma.masked_invalid(similarities.to_numpy(dtype=float)),
+                      cmap=cmap, vmin=0, vmax=1, aspect='auto')
+
+    ax.axvline(n_cols - 1.5, color='white', linewidth=4)
+
+    if n_logs * n_cols <= 300:
+        for (row, col), value in np.ndenumerate(similarities.to_numpy(dtype=float)):
+            if not np.isnan(value):
+                ax.text(col, row, f"{value:.2f}", ha='center', va='center', fontsize=7,
+                        color='white' if value < 0.2 or value > 0.8 else 'black')
+
+    ax.set_xticks(range(n_cols), features + ['overall'], rotation=45, ha='right')
+    ax.set_yticks(range(n_logs), similarities.index)
+    ax.set_xlabel('Target feature')
+    ax.set_ylabel('Log')
+    fig.colorbar(image, ax=ax, label='Feasibility (similarity to target)')
+    fig.tight_layout()
+    return fig
 
 if __name__ == '__main__':
     play_header()
@@ -476,13 +543,4 @@ if __name__ == '__main__':
                 st.dataframe(dataframes)
 
             with col2:
-                plt.figure(figsize=(6, 3))
-                # Use the full (unique, already sorted) log name per point, not just the
-                # shared 'genEL' prefix, so points don't all stack on the same x position.
-                plt.plot(dataframes.index, dataframes['target_similarity'], 'o-')
-                plt.xlabel('Log')
-                plt.ylabel('Target Similarity')
-                # Full log names are long, so always rotate to keep labels legible.
-                plt.xticks(rotation=45, ha='right')
-                plt.tight_layout()
-                st.pyplot(plt, dpi=400)
+                st.pyplot(plot_feasibility_heatmap(dataframes, step_config['generator_params']['targets']), dpi=400)

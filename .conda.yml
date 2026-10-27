@@ -18,12 +18,12 @@ dependencies:
       - pytest~=8.3.4
       - pm4py~=2.7.2
       - imbalanced-learn~=0.14.2
-      - numpy~=1.26.4
+      - numpy>=2.0,<2.3
       - networkx~=3.0
       - kafka-python==2.0.2
       - scheduled-futures==1.1.0
       - PyYAML~=6.0.1
       - python-dotenv~=1.0.1
       - future~=0.18.2
-      - requests~=2.25.1
+      - requests>=2.27,<3
       - process-mining-core~=0.1.3
