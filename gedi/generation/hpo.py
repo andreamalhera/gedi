@@ -1,3 +1,4 @@
+import math
 import multiprocessing
 import os
 import pandas as pd
@@ -28,6 +29,8 @@ from gedi.utils.target_validation import validate_target
 from functools import partial
 
 RANDOM_SEED = 10
+# Finite cost for failed trials, since SMAC's default (inf) becomes NaN and crashes its surrogate model.
+CRASH_COST = 1e6
 random.seed(RANDOM_SEED)
 
 def get_tasks(targets, output_path="", reference_feature=None):
@@ -222,6 +225,10 @@ class GediTask():
             del _
             random.seed(RANDOM_SEED)
             result = self.eval_log(features)
+            # Raise on NaN/inf so SMAC records a crashed trial with CRASH_COST instead of a poisoned success.
+            non_finite = {k: v for k, v in result.items() if not math.isfinite(v)}
+            if non_finite:
+                raise ValueError(f"Non-finite feature distance(s) {non_finite} for config {dict(config)}")
             return result
 
         def eval_log(self, features):
@@ -244,6 +251,7 @@ class GediTask():
                 deterministic=True,
                 n_trials=n_trials,
                 objectives=objectives,
+                crash_cost=CRASH_COST,
                 n_workers=-1
             )
 

@@ -1,10 +1,11 @@
+import math
 import pandas as pd
 import pytest
 from gedi.run import gedi
 from gedi.generation.generator import PTLGenerator
 from gedi.generation.hpo import GediTask, GenerateEventLogs
 from gedi.utils.io_helpers import compute_similarity
-from gedi.utils.target_validation import fit_window, validate_target
+from gedi.utils.target_validation import feature_bounds, fit_window, validate_target
 from gedi.utils.param_keys.features import FEATURE_SET, FEATURE_PARAMS
 from gedi.utils.param_keys.generator import TARGETS, CONFIG_SPACE, SYSTEM_PARAMS, GENERATOR_PARAMS
 
@@ -123,6 +124,41 @@ def test_generator_wrapper_skips_failing_target(monkeypatch):
 
     assert result == {}
 
+class FlakyGenerator():
+    """Stub generator whose feature computation fails on selected trials, e.g. feeed's
+    distinct_activities_non_overlap raising ZeroDivisionError on a log with an empty trace."""
+    def __init__(self, failing_calls, failure):
+        self.configspace = {'sequence': (0.01, 1.0), 'loop': (0.01, 1.0)}
+        self.failing_calls = failing_calls
+        self.failure = failure
+        self.calls = 0
+
+    def generate_log(self, config, feature_keys, seed=0):
+        self.calls += 1
+        if self.calls in self.failing_calls:
+            if self.failure == "raise":
+                raise ZeroDivisionError("division by zero")
+            return None, {key: float('nan') for key in feature_keys}
+        return None, {key: config['sequence'] for key in feature_keys}
+
+@pytest.mark.parametrize("failure", ["raise", "nan"])
+@pytest.mark.parametrize("failing_calls", [{1}, {5}, {1, 2, 3, 7, 11}])
+def test_optimize_survives_failing_trials(failure, failing_calls):
+    """A failing trial used to get SMAC's default crash cost (inf), which became NaN
+    when normalizing costs and aborted the target with 'Input y contains NaN'."""
+    TARGET, TOLERANCE = 0.3, 0.2
+    task = (0, pd.Series({'log': 'dummy', 'ratio_top_20_variants': TARGET}))
+    generator = FlakyGenerator(failing_calls, failure)
+    hpo_task = GediTask.HPOTask(task, generator)
+
+    incumbent = hpo_task.optimize({'n_trials': 20})
+    if isinstance(incumbent, list):
+        incumbent = incumbent[0]
+
+    assert generator.calls == 20
+    # SMAC must still reach TARGET despite the failed trials.
+    assert incumbent['sequence'] == pytest.approx(TARGET, abs=TOLERANCE)
+
 def test_GediTask_skips_unknown_feature_target():
     """So that a target with an unknown feature (i.e., one that is not in
     feeed.feature_extractor.feature_type) doesn't crash the whole GediTask run.
@@ -166,6 +202,17 @@ def test_fit_window():
     assert fit_window('ratio_variants_per_number_of_traces', 0.99, 0.2) == pytest.approx((0.8, 1.0))
     assert fit_window('ratio_variants_per_number_of_traces', 0.99, 1.5) == (0.0, 1.0)
     assert fit_window('epa_normalized_sequence_entropy', 0.39, 0.39) == (0.39, 0.78)
+    assert fit_window('density_dfg', 0.9, 0.2) == pytest.approx((0.8, 1.0))
+
+def test_feature_bounds_complexity_features():
+    assert feature_bounds('separability_ratio_dfg') == (0.0, 1.0)
+    assert feature_bounds('simple_trace_diversity') == (0.0, 1.0)
+    assert feature_bounds('advanced_trace_diversity') == (0.0, math.inf)
+    # structure is negative when ties exceed n_variants**2, e.g. a single variant a->b->c gives -1
+    assert feature_bounds('structure') == (-math.inf, 1.0)
+
+    errors, _ = validate_target({'density_dfg': 1.5, 'structure': -1.0})
+    assert len(errors) == 1 and 'density_dfg' in errors[0]
 
 def test_compute_similarity():
     # Bounded features: 1 - absolute difference, also beyond the range observed in BPIC logs
@@ -178,6 +225,9 @@ def test_compute_similarity():
     similarity = compute_similarity({'n_variants': 10, 'ratio_top_20_variants': 0.3, 'trace_len_mean': float('nan')},
                                     {'n_variants': 10, 'ratio_top_20_variants': 0.5, 'trace_len_mean': 4.0, 'log': 'genEL'})
     assert similarity == pytest.approx(0.9)
+    # Bounded complexity features also use the absolute difference
+    assert compute_similarity({'separability_ratio_dfg': 0.158},
+                              {'separability_ratio_dfg': 0.1667}) == pytest.approx(0.9913)
 
 def test_GediTask_skips_impossible_target():
     INPUT_PARAMS = {'targets': [
