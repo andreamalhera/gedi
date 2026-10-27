@@ -1,10 +1,19 @@
 import math
 import numbers
 
+UNIT_INTERVAL_FEATURES = {
+    "simple_trace_diversity", "event_density", "distinct_activities_non_overlap",
+    "avg_traces_with_loop", "avg_traces_with_repetition", "average_affinity", "deviation_from_random",
+    "density_dfg", "structure_dfg", "separability_ratio_dfg", "sequentiality_ratio_dfg", "cyclicity_dfg",
+}
+
 def feature_bounds(feature):
     # Ratios and normalized entropies are bounded to [0, 1] by definition.
-    if feature.startswith("ratio_") or feature.startswith("epa_normalized_"):
+    if feature.startswith("ratio_") or feature.startswith("epa_normalized_") or feature in UNIT_INTERVAL_FEATURES:
         return 0.0, 1.0
+    # 1 - ties / n_variants**2, where ties count activity pairs and can exceed n_variants**2.
+    if feature == "structure":
+        return -math.inf, 1.0
     if "skewness" in feature or "kurtosis" in feature or feature.startswith("eventropy_k_block_diff"):
         return -math.inf, math.inf
     return 0.0, math.inf
