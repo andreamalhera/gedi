@@ -11,7 +11,6 @@ from gedi.utils.param_keys.generator import TARGETS, CONFIG_SPACE, SYSTEM_PARAMS
 AGREEMENT_THRESHOLD = 0.75
 
 def assert_similarities(similarities, expected_windows):
-    # Generation is not reproducible between runs, so each expected value is a (low, high) window
     assert len(similarities) == len(expected_windows)
     assert all(0.0 <= s <= 1.0 for s in similarities)
     agreement = sum(1 for s, (low, high) in zip(similarities, expected_windows) if low <= s <= high) / len(expected_windows)

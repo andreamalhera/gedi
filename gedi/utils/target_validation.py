@@ -20,8 +20,8 @@ def fit_window(feature, start, width):
     return start, start + width
 
 def is_numeric(value):
-    # numbers.Real also covers numpy scalars such as np.int64 from feature extraction
-    return isinstance(value, numbers.Real) and not isinstance(value, bool) and not math.isnan(value)
+    return isinstance(value, numbers.Real) and not isinstance(value, bool) and not math.isnan(value) # numbers.Real also covers numpy scalars such as np.int64 from feature extraction
+
 
 def max_config_value(config_value):
     if isinstance(config_value, (list, tuple)):
