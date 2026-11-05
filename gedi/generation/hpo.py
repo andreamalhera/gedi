@@ -103,7 +103,8 @@ class GediTask():
             print("ERROR: No valid targets left to generate. See errors above.")
         else: #try:
             self.feature_keys = sorted([feature for feature in tasks.columns.tolist() if feature != "log"])
-            num_cores = multiprocessing.cpu_count() if len(tasks) >= multiprocessing.cpu_count() else len(tasks)
+            max_cores = system_params.get('n_jobs') or multiprocessing.cpu_count()
+            num_cores = min(max_cores, multiprocessing.cpu_count(), len(tasks))
             #NOTE FOR DEBUGGING USE THE LINE BELOW
             #self.generator_wrapper([*tasks.iterrows()][0], embedded_generator = embedded_generator, config_space = config_space, system_params = system_params)#TESTING
             with multiprocessing.Pool(num_cores) as p:
@@ -113,7 +114,7 @@ class GediTask():
                                           embedded_generator = embedded_generator,
                                           config_space = config_space,
                                           system_params = system_params)
-                generated_features = p.map(partial_wrapper, [(index, row) for index, row in tasks.iterrows()])
+                generated_features = list(p.imap(partial_wrapper, [(index, row) for index, row in tasks.iterrows()], chunksize=1))
             self.generated_features = [
                         {
                             #'log': config.get('log'),
