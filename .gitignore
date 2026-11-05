@@ -3,7 +3,6 @@
 build/
 data/
 gedi.egg-info/
-logs/
 notebooks/.ipynb_checkpoints/*
 output/
 smac3_output/
