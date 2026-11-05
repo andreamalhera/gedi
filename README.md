@@ -144,6 +144,7 @@ In the `generation.json`, we have the following key-value pairs:
 * system_params:
     - output_path: defines the output folder
     - n_trials: the maximum number of trials for the hyperparameter optimization to find a feasible solution to the specific configuration being used as the target
+    - n_jobs (optional): the maximum number of targets generated in parallel. Defaults to the number of CPU cores. Lower it if generation runs out of memory. For targets that combine heavy measures, e.g. `eventropy_global_block` or `average_edit_distance`, choose a lower `n_jobs`, since each worker computes all of a target's measures in every trial.
 * plot_reference_feature: defines the feature, which is used on the x-axis on the output plots, i.e., each feature defined in the 'objectives' of the 'target' is plotted against the reference feature being defined in this value
 
 In case of manually defining the targets for the features in config space, the following table shows the range of the features in the real-world event log data (BPIC's) for reference:
