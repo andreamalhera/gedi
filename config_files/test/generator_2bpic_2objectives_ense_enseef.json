@@ -13,7 +13,7 @@
 	"output_path": "output/generated",
 	"n_trials": 2}},
 	{"pipeline_step": "feature_extraction",
-	"input_path": "output/features/generated/2_bpic_features/2_ense_enseef",
+	"input_path": "output/generated/2_ense_enseef",
 	"feature_params": {"feature_set": ["simple_stats", "trace_length", "trace_variant", "activities",
 	"start_activities", "end_activities", "eventropies", "epa_based"]}, "output_path": "output/plots",
 	"real_eventlog_path": "data/test/2_bpic_features.csv", "plot_type": "boxplot"}]
