@@ -147,6 +147,8 @@ In the `generation.json`, we have the following key-value pairs:
     - n_jobs (optional): the maximum number of targets generated in parallel. Defaults to the number of CPU cores. Lower it if generation runs out of memory. For targets that combine heavy measures, e.g. `eventropy_global_block` or `average_edit_distance`, choose a lower `n_jobs`, since each worker computes all of a target's measures in every trial.
 * plot_reference_feature: defines the feature, which is used on the x-axis on the output plots, i.e., each feature defined in the 'objectives' of the 'target' is plotted against the reference feature being defined in this value
 
+Generated event logs are saved in `<output_path>/<number of features>_<feature abbreviations>/`, together with a `features/` folder containing the computed feature values of each log as `.json`. Each file is named after its target values, sorted by feature name, with `p` as the decimal point and `m` as the minus sign, e.g., `genEL_m0p4444_1p0_nan.xes` for the targets -0.4444, 1.0 and an unset feature (`nan`). Logs generated with versions up to v1.11.0 omit the decimal point and keep the minus sign, e.g., `genEL_-04444_10_nan.xes`.
+
 In case of manually defining the targets for the features in config space, the following table shows the range of the features in the real-world event log data (BPIC's) for reference:
 <div style="overflow-x:auto;">
     <table border="1" class="dataframe">

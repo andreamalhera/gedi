@@ -346,10 +346,10 @@ def set_generator_targets(generator_params):
 
 def sort_key(val):
     parts = val.split('_')
-    # Extract the numeric parts after the 'genEL' prefix as floats, e.g. from 'genEL_039'
-    # get (39.0,), or from 'genEL_047_nan' (a multi-objective target missing one dimension)
-    # get (47.0, nan). float() parses both regular numbers and the literal 'nan' segment.
-    return tuple(float(part) for part in parts[1:])
+    # Extract the numeric parts after the 'genEL' prefix as floats, e.g. from 'genEL_0p39'
+    # get (0.39,), or from 'genEL_m0p47_nan' (a multi-objective target missing one dimension)
+    # get (-0.47, nan). 'p' and 'm' encode the decimal point and minus sign in file names.
+    return tuple(float(part.replace('p', '.').replace('m', '-')) for part in parts[1:])
 
 def match_logs_to_targets(targets):
     log_targets = {}
