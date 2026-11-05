@@ -57,7 +57,9 @@ def get_keys_abbreviation(obj_keys):
 def get_generated_file_name(obj, identifier):
     obj_sorted = dict(sorted(obj.items()))
     obj_values = [round(x, 4) for x in [*obj_sorted.values()]]
-    obj_values_joined = '_'.join(map(str, obj_values)).replace('.', '')
+    # Writes '.' as 'p' and '-' as 'm', so values stay readable and distinct 
+    # (e.g. 1.0 -> 1p0, 10 -> 10, -0.5 -> m0p5)
+    obj_values_joined = '_'.join(str(x).replace('.', 'p').replace('-', 'm') for x in obj_values)
     return f"{identifier}_{obj_values_joined}"
 
 def get_output_key_value_location(obj, output_path, identifier):

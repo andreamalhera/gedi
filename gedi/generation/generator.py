@@ -124,7 +124,7 @@ class PTLGenerator():
         print("SUCCESS: Saved generated event log in", save_path)
         features_to_dump = generated_features
 
-        features_to_dump['log']= os.path.split(save_path)[1].split(".")[0]
+        features_to_dump['log']= os.path.splitext(os.path.split(save_path)[1])[0]
         # calculating the manhattan distance of the generated log to the target features
         #features_to_dump['distance_to_target'] = calculate_manhattan_distance(objectives, features_to_dump)
         features_to_dump['target_similarity'] = compute_similarity(objectives, features_to_dump)
