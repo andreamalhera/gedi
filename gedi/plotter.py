@@ -326,7 +326,9 @@ class FeaturesPlotter:
         #output_path = os.path.join(output_path, source_name)
         if REAL_EVENTLOG_PATH in params:
             real_eventlogs_path=params[REAL_EVENTLOG_PATH]
-            real_eventlogs = pd.read_csv(real_eventlogs_path)
+            if isinstance(real_eventlogs_path, str):
+                real_eventlogs_path = [real_eventlogs_path]
+            real_eventlogs = pd.concat([pd.read_csv(path) for path in real_eventlogs_path], ignore_index=True)
             fig, output_path = eval(f"self.plot_violinplot_multi(features, output_path, real_eventlogs, source='{source_name}' {plot_type}{font_size}{boxplot_w}{LEGEND})")
         else:
             fig, output_path = eval(f"self.plot_violinplot_single(features, output_path, source='{source_name}' {plot_type}{font_size}{boxplot_w})")
