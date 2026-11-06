@@ -140,6 +140,7 @@ In the `generation.json`, we have the following key-value pairs:
         - num_traces: the number of traces in the event log
         - duplicate: the probability of duplicating an activity label
         - or: probability to add an or operator to the tree
+        - time_spread (optional): exponent gamma of the artificial event timestamps, placing event i of N at N * (i/N)^gamma seconds. Defaults to 1, i.e., one second between events. Values above 1 bunch events at the start of the log, values below 1 at the end.
 
 * system_params:
     - output_path: defines the output folder
