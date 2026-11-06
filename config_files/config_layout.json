@@ -25,7 +25,8 @@
         "lt_dependency": [0.01, 1],
         "num_traces": [10, 100],
         "duplicate": [0],
-        "or": [0]
+        "or": [0],
+        "time_spread": [1]
       },
       "n_trials": 50
     }
