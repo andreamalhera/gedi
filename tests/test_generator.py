@@ -1,9 +1,13 @@
 import math
+import random
 import pandas as pd
 import pytest
 from gedi.run import gedi
+from gedi.features import compute_features_from_event_data
 from gedi.generation.generator import PTLGenerator
 from gedi.generation.hpo import GediTask, GenerateEventLogs
+from gedi.generation.model import create_model
+from gedi.generation.scheduler import play_log, START_TIMESTAMP
 from gedi.utils.io_helpers import compute_similarity
 from gedi.utils.target_validation import feature_bounds, fit_window, validate_target
 from gedi.utils.param_keys.features import FEATURE_SET, FEATURE_PARAMS
@@ -246,3 +250,42 @@ def test_GediTask_skips_impossible_target():
 
     assert len(genED.generated_features) == 1
     assert 0.0 <= genED.generated_features[0]['features']['target_similarity'] <= 1.0
+
+TIMESTAMP_CONFIG = {'mode': 8, 'sequence': 0.4, 'choice': 0.3, 'parallel': 0.2, 'loop': 0.2, 'silent': 0.1,
+                    'lt_dependency': 0.1, 'num_traces': 50, 'duplicate': 0, 'or': 0}
+
+def generate_timestamped_log(config=TIMESTAMP_CONFIG):
+    random.seed(10)
+    tree = create_model(config)
+    random.seed(10)
+    return play_log(tree, config)
+
+def test_play_log_timestamps_are_reproducible():
+    epa_features = ['epa_normalized_sequence_entropy_linear_forgetting',
+                    'epa_normalized_sequence_entropy_exponential_forgetting']
+    log1, log2 = generate_timestamped_log(), generate_timestamped_log()
+    timestamps = lambda log: [event['time:timestamp'] for trace in log for event in trace]
+
+    assert timestamps(log1) == timestamps(log2)
+    assert compute_features_from_event_data(epa_features, log1) == compute_features_from_event_data(epa_features, log2)
+
+@pytest.mark.parametrize("time_spread", [None, 0.2, 5])
+def test_play_log_timestamps_are_strictly_increasing(time_spread):
+    config = TIMESTAMP_CONFIG if time_spread is None else {**TIMESTAMP_CONFIG, 'time_spread': time_spread}
+    timestamps = [event['time:timestamp'] for trace in generate_timestamped_log(config) for event in trace]
+
+    assert len(timestamps) > 1
+    assert all(earlier < later for earlier, later in zip(timestamps, timestamps[1:]))
+
+def test_play_log_default_timestamps_are_one_second_apart():
+    timestamps = [event['time:timestamp'] for trace in generate_timestamped_log() for event in trace]
+
+    assert timestamps[0] == START_TIMESTAMP
+    assert all((later - earlier).total_seconds() == 1 for earlier, later in zip(timestamps, timestamps[1:]))
+
+def test_play_log_time_spread_controls_forgetting():
+    feature = 'epa_normalized_sequence_entropy_linear_forgetting'
+    forgetting = lambda time_spread: compute_features_from_event_data(
+        [feature], generate_timestamped_log({**TIMESTAMP_CONFIG, 'time_spread': time_spread}))[feature]
+
+    assert forgetting(0.2) > forgetting(1) > forgetting(5)
