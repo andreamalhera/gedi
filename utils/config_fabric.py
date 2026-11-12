@@ -1,7 +1,9 @@
 from itertools import product as cproduct
 from itertools import combinations
 from pylab import *
+import ast
 import base64
+import tempfile
 import json
 import math
 import os
@@ -30,6 +32,43 @@ os.getppid = _real_getppid
 st.set_page_config(layout='wide')
 INPUT_XES="output/inputlog_temp.xes"
 LOGO_PATH="gedi/utils/logo.png"
+
+# Hugging Face sets SPACE_ID in the Space runtime. When hosted, users share one machine, so
+# output paths are per-session temp dirs (not editable) and job size is capped.
+HOSTED = bool(os.environ.get("SPACE_ID"))
+MAX_TARGETS = int(os.environ.get("IGEDI_MAX_TARGETS", 30))
+MAX_TRIALS = int(os.environ.get("IGEDI_MAX_TRIALS", 100))
+
+IGEDI_CITATION = ("How to cite: A. Maldonado, S. A. Aryasomayajula, C. M. M. Frey, T. Seidl. "
+                  "iGEDI: interactive Generating Event Data with Intentional Features. "
+                  "ICPM 2024 Tool Demonstration Track, CEUR Workshop Proceedings, Vol. 3783, 2024.")
+
+EXAMPLE_FEATURES = ["epa_normalized_variant_entropy", "ratio_most_common_variant"]
+EXAMPLE_VALUES = {"epa_normalized_variant_entropy": [0.3, 0.5, 0.7],
+                  "ratio_most_common_variant": [0.1, 0.3, 0.5]}
+
+def session_workdir():
+    if "workdir" not in st.session_state:
+        st.session_state["workdir"] = tempfile.mkdtemp(prefix="igedi_")
+    return st.session_state["workdir"]
+
+def load_example():
+    """Preset: a 3x3 grid over two features, i.e. 9 target logs."""
+    st.session_state["pipeline_steps"] = ["event_logs_generation"]
+    st.session_state["toggle_switch_Point-"] = True   # grid-based
+    st.session_state["toggle_switch_Manual"] = False  # manual input
+    st.session_state["toggle_switch_Range"] = True    # combinatorial
+    st.session_state["toggle_switch_Square"] = False  # square grid
+    st.session_state["num_values"] = 3
+    st.session_state["selected_features"] = EXAMPLE_FEATURES
+    for feature, values in EXAMPLE_VALUES.items():
+        for i, value in enumerate(values):
+            st.session_state[f"input_{feature}: value {i+1}"] = str(value)
+    st.session_state["n_trials"] = "20"
+
+def stop_with_error(message):
+    st.error(message)
+    st.stop()
 
 def get_base64_image(image_path):
     with open(image_path, "rb") as image_file:
@@ -67,7 +106,28 @@ def play_header():
     """
     ## **G**enerating **E**vent **D**ata with **I**ntentional Features for Benchmarking Process Mining
     """
+    st.markdown(
+        "Real event logs rarely cover the characteristics you want to evaluate on. "
+        "iGEDI generates event logs that hit **target feature values you choose** "
+        "(e.g. variant entropy, trace length statistics), either a single log or a whole "
+        "grid that spans the feature space evenly. Pick features and values below, press "
+        "**Run Generation**, and download the `.xes` logs.  \n"
+        "iGEDI is based on [the ICPM'24 Demo Paper](https://ceur-ws.org/Vol-3783/paper_349.pdf) "
+        f"<span title=\"{IGEDI_CITATION}\" style=\"cursor: help; font-size: 0.85em; "
+        "text-decoration: underline dotted;\">cite</span> "
+        "The code is available on [GitHub](https://github.com/andreamalhera/gedi). For larger runs, use: `pip install gedi`",
+        unsafe_allow_html=True,
+    )
+    st.button("Load example: 3×3 grid over variant entropy × most common variant ratio",
+              on_click=load_example)
     return
+
+def init_state(key, value):
+    # Widgets get their defaults through session state, never through value=/default=.
+    # That keeps the widget ID stable across reruns and lets load_example preset them.
+    if key not in st.session_state:
+        st.session_state[key] = value
+    return {"key": key}
 
 def double_switch(label_left, label_right, third_label=None, fourth_label=None, value=False):
     if third_label==None and fourth_label==None:
@@ -83,9 +143,8 @@ def double_switch(label_left, label_right, third_label=None, fourth_label=None, 
 
     with col2:
         # Create the toggle switch
-        toggle_option = st.toggle(" ",value=value,
-            key="toggle_switch_"+label_left,
-        )
+        key = "toggle_switch_"+label_left
+        toggle_option = st.toggle(" ", **init_state(key, value))
 
     with col3:
         st.write(label_right)
@@ -96,9 +155,8 @@ def double_switch(label_left, label_right, third_label=None, fourth_label=None, 
 
         with col6:
             # Create the toggle switch
-            toggle_option_2 = st.toggle(" ",value=False,
-                key="toggle_switch_"+third_label,
-            )
+            key = "toggle_switch_"+third_label
+            toggle_option_2 = st.toggle(" ", **init_state(key, False))
 
         with col7:
             st.write(fourth_label)
@@ -120,7 +178,8 @@ def input_multicolumn(labels, default_values, n_cols=5):
         extended.extend(cols)
     for label, default_value, col in zip(labels, default_values, extended):
         with col:
-            result[label] = col.text_input(label, default_value, key=f"input_"+label+'_'+str(default_value))
+            key = f"input_{label}"
+            result[label] = col.text_input(label, **init_state(key, str(default_value)))
     return result.values()
 
 def split_list(input_list, n):
@@ -138,24 +197,31 @@ def default_range(feature, value):
     step = math.floor((high - low) / 3 * 100) / 100 or round((high - low) / 3, 4)
     return [round(low, 2), round(high, 2), step]
 
-def get_ranges_from_stats(stats, tuple_values):
-    col_for_row = ", ".join([f"x[\'{i}\'].astype(float)" for i in tuple_values])
-    stats['range'] = stats.apply(lambda x: tuple([eval(col_for_row)]), axis=1)
-    #tasks = eval(f"list(itertools.product({(parameters*n_para_obj)[:-2]}))")
-    result = [f"np.around({x}, 2)" for x in stats['range']]
-    result = ", ".join(result)
-    return result
+def to_float(value, label):
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        stop_with_error(f"'{value}' is not a number (field: {label}).")
+
+def arange_values(selected_min, selected_max, step_value, label):
+    selected_min, selected_max, step_value = (to_float(v, label) for v in (selected_min, selected_max, step_value))
+    if step_value <= 0:
+        stop_with_error(f"Step must be greater than 0 (field: {label}).")
+    if selected_max < selected_min:
+        stop_with_error(f"Max must be at least min (field: {label}).")
+    return np.around(np.arange(selected_min, selected_max + step_value / 2, step_value), 2)
 
 def create_objectives_grid(df, objectives, n_para_obj=2, method="combinatorial"):
+        # One list of candidate values per objective; targets are their cartesian product.
+        value_lists = []
         if "combinatorial" in method:
-            sel_features = df.index.to_list()
-            parameters_o = "objectives, "
-            parameters = get_ranges_from_stats(df, sorted(objectives))
-            objectives = sorted(sel_features)
-            tasks = f"list(cproduct({parameters}))[0]"
+            # df: one row per feature, columns are the values (e.g. min/max or "value i").
+            columns = sorted(objectives)
+            objectives = df.index.to_list()
+            for feature in objectives:
+                value_lists.append(np.around([to_float(v, feature) for v in df.loc[feature, columns]], 2))
 
         elif method=="range-from-csv":
-            tasks = ""
             for objective in objectives:
                 min_col, max_col, step_col = st.columns(3)
                 with min_col:
@@ -164,28 +230,20 @@ def create_objectives_grid(df, objectives, n_para_obj=2, method="combinatorial")
                     selcted_max = st.slider('max', min_value=selcted_min, max_value=float(df[objective].max()), value=df[objective].quantile(0.9), step=0.1, key=objective+"max")
                 with step_col:
                     step_value = st.slider('step', min_value=float(df[objective].min()), max_value=float(df[objective].quantile(0.9)), value=df[objective].median()/(df[objective].min()+0.0001), step=0.01, key=objective+"step")
-                tasks += f"np.around(np.arange({selcted_min}, {selcted_max}+{step_value}/2, {step_value}),2), "
+                value_lists.append(arange_values(selcted_min, selcted_max, step_value, objective))
         else :#method=="range-manual":
-            experitments = []
-            tasks=""
             if objectives != None:
                 cross_labels =  [feature[0]+': '+feature[1] for feature in list(cproduct(objectives,['min', 'max', 'step']))]
                 cross_values = [value for objective in objectives for value in default_range(objective, df[objective])]
                 ranges = zip(objectives, split_list(list(input_multicolumn(cross_labels, cross_values, n_cols=3)), n_para_obj))
                 for objective, range_value in ranges:
                     selcted_min, selcted_max, step_value = range_value
-                    tasks += f"np.around(np.arange({selcted_min}, {selcted_max}+{step_value}/2, {step_value}),2), "
+                    value_lists.append(arange_values(selcted_min, selcted_max, step_value, objective))
 
-        try:
-            cartesian_product = list(cproduct(*eval(tasks)))
-            targets = [{key: value[idx] for idx, key in enumerate(objectives)} for value in cartesian_product]
-            return targets
-        except SyntaxError as e:
-            st.write("Please select valid features above.")
-            sys.exit(1)
-        except TypeError as e:
-            st.write("Please select at least 2 values to define.")
-            sys.exit(1)
+        if not objectives or not value_lists:
+            stop_with_error("Please select at least one feature above.")
+        cartesian_product = list(cproduct(*value_lists))
+        return [{key: float(value[idx]) for idx, key in enumerate(objectives)} for value in cartesian_product]
 
 def set_generator_targets(generator_params):
     def handle_csv_file(uploaded_file,grid_option):
@@ -254,8 +312,8 @@ def set_generator_targets(generator_params):
             return df.to_dict(orient='records')
 
     def feature_select():
-        return st.multiselect("Selected features", list(generator_params['targets'].keys()),
-                                                        list(generator_params['targets'].keys())[-1])
+        options = list(generator_params['targets'].keys())
+        return st.multiselect("Selected features", options, **init_state("selected_features", [options[-1]]))
 
     def handle_manual_option(grid_option):
         if grid_option:
@@ -263,7 +321,8 @@ def set_generator_targets(generator_params):
             if combinatorial:
                 col1, col2 = st.columns([1,4])
                 with col1:
-                    num_values = st.number_input('How many values to define?', min_value=2, step=1)
+                    num_values = st.number_input('How many values to define?', min_value=2, step=1,
+                                                 **init_state("num_values", 2))
                 with col2:
                     sel_features = feature_select()
 
@@ -271,11 +330,12 @@ def set_generator_targets(generator_params):
                 cross_labels =  [feature[0]+': '+feature[1] for feature in list(cproduct(sel_features,values_indexes))]
                 cross_values = [value for feature in sel_features
                                 for value in default_values(feature, generator_params['targets'][feature], num_values)]
+                if not sel_features:
+                    stop_with_error("Please select at least one feature above.")
                 parameters = split_list(list(input_multicolumn(cross_labels, cross_values, n_cols=num_values)), len(sel_features))
-                tasks = f"list({parameters})"
+                parameters = [[to_float(v, feature) for v in values] for feature, values in zip(sel_features, parameters)]
 
-                tasks_df = pd.DataFrame(eval(tasks), index=sel_features, columns=values_indexes)
-                tasks_df = tasks_df.astype(float)
+                tasks_df = pd.DataFrame(parameters, index=sel_features, columns=values_indexes)
                 return handle_combinatorial(sel_features, tasks_df, values_indexes)
 
             else: # Range
@@ -286,7 +346,8 @@ def set_generator_targets(generator_params):
             sel_features = feature_select()
             #sel_features = st.multiselect("Selected features", list(generator_params['targets'].keys()))
 
-            target = {sel_feature: float(st.text_input(sel_feature, generator_params['targets'][sel_feature])) for sel_feature in sel_features}
+            target = {sel_feature: to_float(st.text_input(sel_feature, generator_params['targets'][sel_feature]), sel_feature)
+                      for sel_feature in sel_features}
             return [target]
         return[]
 
@@ -298,16 +359,19 @@ def set_generator_targets(generator_params):
         targets = []
         if uploaded_file is not None:
             if uploaded_file.name.endswith('.xes'):
-                with open(f"{uploaded_file.name}", 'wb') as f:
+                # Save inside this session's dir under a fixed name, so concurrent users
+                # (or a malicious file name) can't clash with other files.
+                xes_path = os.path.join(session_workdir(), "uploaded_log.xes")
+                with open(xes_path, 'wb') as f:
                     f.write(uploaded_file.getbuffer())
 
                 sel_features = st.multiselect("Selected features", list(generator_params['targets'].keys()))
-                xes_features = extract_features(f"{uploaded_file.name}", sel_features)
+                xes_features = extract_features(xes_path, sel_features)
                 del xes_features['log']
                 # removing the temporary file
                 uploaded_file.close()
-                if os.path.exists(f"{uploaded_file.name}"):
-                    os.remove(f"{uploaded_file.name}")
+                if os.path.exists(xes_path):
+                    os.remove(xes_path)
                 xes_features = {key: float(value) for key, value in xes_features.items()}
                 targets = [xes_features]
 
@@ -328,8 +392,31 @@ def set_generator_targets(generator_params):
     """
     updated_values = input_multicolumn(generator_params['config_space'].keys(), generator_params['config_space'].values())
     for key, new_value in zip(generator_params['config_space'].keys(), updated_values):
-        generator_params['config_space'][key] = eval(new_value)
-    generator_params['n_trials'] = int(st.text_input('n_trials', generator_params['n_trials']))
+        # literal_eval only accepts Python literals such as [0.01, 1], never code.
+        try:
+            parsed = ast.literal_eval(new_value)
+        except (ValueError, SyntaxError):
+            stop_with_error(f"'{new_value}' is not a valid value for {key}. Use a list such as [0.01, 1].")
+        if not isinstance(parsed, (list, tuple)) or not all(is_numeric(v) for v in parsed):
+            stop_with_error(f"{key} must be a list of numbers, e.g. [0.01, 1].")
+        generator_params['config_space'][key] = list(parsed)
+    n_trials = st.text_input('n_trials', **init_state("n_trials", str(generator_params['n_trials'])))
+    try:
+        generator_params['n_trials'] = int(n_trials)
+    except ValueError:
+        stop_with_error(f"n_trials must be a whole number, got '{n_trials}'.")
+    if generator_params['n_trials'] < 1:
+        stop_with_error("n_trials must be at least 1.")
+
+    if HOSTED:
+        n_targets = len(generator_params['targets'])
+        st.caption(f"This run: {n_targets} target(s) × {generator_params['n_trials']} optimization trials. "
+                   f"The hosted demo allows up to {MAX_TARGETS} targets and {MAX_TRIALS} trials; "
+                   "use `pip install gedi` for larger benchmarks.")
+        if n_targets > MAX_TARGETS:
+            stop_with_error(f"{n_targets} targets exceed the hosted limit of {MAX_TARGETS}. Use fewer values or features.")
+        if generator_params['n_trials'] > MAX_TRIALS:
+            stop_with_error(f"n_trials exceeds the hosted limit of {MAX_TRIALS}.")
 
     # For features' possible ranges and the configuration space.
     target_errors, target_warnings = {}, {}
@@ -410,7 +497,7 @@ if __name__ == '__main__':
     pipeline_steps = st.multiselect(
         "Choose pipeline step",
         step_candidates,
-        ["event_logs_generation"]
+        **init_state("pipeline_steps", ["event_logs_generation"])
     )
 
     step_configs = []
@@ -434,6 +521,9 @@ if __name__ == '__main__':
                         "features to extract",
                         layout_features
                     )
+                elif HOSTED and pipeline_step == "event_logs_generation" and step_key == "output_path":
+                    # Users must not choose server paths: the run deletes this folder first.
+                    step_config[step_key] = os.path.join(session_workdir(), "generated")
                 elif step_key != "pipeline_step":
                     step_config[step_key] = st.text_input(step_key, step_config[step_key])
 
@@ -461,7 +551,10 @@ if __name__ == '__main__':
     config_file = json.dumps(run_configs, indent=4)
 
     # Streamlit input for output file path
-    output_path = st.text_input("Output file path", "config_files/target_config.json")
+    if HOSTED:
+        output_path = os.path.join(session_workdir(), "target_config.json")
+    else:
+        output_path = st.text_input("Output file path", "config_files/target_config.json")
 
     # Ensure output directory exists
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
@@ -495,13 +588,24 @@ if __name__ == '__main__':
             if os.path.exists(path_to_logs):
                 shutil.rmtree(path_to_logs)
 
-            # Run the actual command
-            with st.spinner("Generating logs.."):
-                result = subprocess.run(command, capture_output=True, text=True)
+            # Run the actual command, showing progress as one feature file appears per finished log.
+            n_targets = max(len(step_config['generator_params']['targets']), 1)
+            progress = st.progress(0.0, text="Starting generation…")
+            log_path = os.path.join(os.path.dirname(output_path) or ".", "generation_output.txt")
+            with open(log_path, "w") as process_log:
+                process = subprocess.Popen(command, stdout=process_log, stderr=subprocess.STDOUT, text=True)
+                while process.poll() is None:
+                    n_done = sum(len(files) for root, _, files in os.walk(path_to_logs)
+                                 if os.path.basename(root) == 'features')
+                    progress.progress(min(n_done / n_targets, 1.0),
+                                      text=f"Generating logs… {n_done}/{n_targets} done")
+                    time.sleep(1)
+            progress.empty()
 
-            if result.returncode != 0:
+            if process.returncode != 0:
                 st.error("Generation failed:")
-                st.code(result.stderr or result.stdout, language='text')
+                with open(log_path) as process_log:
+                    st.code(process_log.read()[-5000:], language='text')
                 st.stop()
 
             st.success("Logs generated!")
