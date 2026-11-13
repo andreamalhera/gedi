@@ -1,5 +1,7 @@
 import io
+import json
 import os
+import urllib.parse
 import zipfile
 import matplotlib.pyplot as plt
 import numpy as np
@@ -7,7 +9,7 @@ import pandas as pd
 import streamlit as st
 
 from igedi.app import compute_feature_similarities, get_generated_file_name, is_numeric
-from igedi.app.config import IGEDI_CITATION, SIMILARITY_GOAL
+from igedi.app.config import IGEDI_CITATION, ISSUE_URL, MAX_ISSUE_CONFIG_CHARS, SIMILARITY_GOAL
 from igedi.app.jobs import feature_files
 
 def sort_key(val):
@@ -85,11 +87,31 @@ def results_zip(job):
     buffer.seek(0)
     return buffer
 
+def report_issue_url(job, outcome):
+    steps = json.loads(job["config_file"])
+    for step in steps:
+        step.pop("output_path", None)
+        step.get("system_params", {}).pop("output_path", None)
+    config = json.dumps(steps, indent=2)
+    if len(config) > MAX_ISSUE_CONFIG_CHARS:
+        config = config[:MAX_ISSUE_CONFIG_CHARS] + "\n... (truncated)"
+    body = (
+        "**What were you trying to do?**\n\n\n"
+        "**What went wrong or is missing?**\n\n\n"
+        "---\n"
+        "Run details (added by iGEDI):\n"
+        f"- Started: {job['started']}\n"
+        f"- Outcome: {outcome}\n"
+        f"- Config:\n```json\n{config}\n```\n"
+    )
+    return ISSUE_URL + "?" + urllib.parse.urlencode({"title": "iGEDI feedback: ", "body": body})
+
 def show_results(job):
     if job["process"].returncode != 0:
         st.error("Generation failed:")
         with open(job["log_path"]) as process_log:
             st.code(process_log.read()[-5000:], language='text')
+        st.link_button("Report this problem on GitHub", report_issue_url(job, "generation failed"))
         return
 
     file_paths = feature_files(job["path_to_logs"])
@@ -110,10 +132,15 @@ def show_results(job):
     n_close = int((dataframes['target_similarity'] >= SIMILARITY_GOAL).sum())
     st.success(f"Generated {n_logs} log(s) from your run started {job['started']}. "
                f"{n_close} of {n_logs} reached at least {SIMILARITY_GOAL} similarity to their target.")
-    st.download_button(label="Download generated logs (.zip)", data=results_zip(job),
-                       file_name='generated_logs.zip', mime='application/zip',
-                       help="Includes the .xes logs, their features, the config to reproduce the run, "
-                            "and how to cite iGEDI.")
+    download_col, report_col = st.columns([1, 1])
+    with download_col:
+        st.download_button(label="Download generated logs (.zip)", data=results_zip(job),
+                           file_name='generated_logs.zip', mime='application/zip',
+                           help="Includes the .xes logs, their features, the config to reproduce the run, "
+                                "and how to cite iGEDI.")
+    with report_col:
+        st.link_button("Report a problem or idea", report_issue_url(job, f"{n_close} of {n_logs} logs reached at least {SIMILARITY_GOAL} similarity"),
+                       help="Opens a GitHub issue with this run's settings filled in. Nothing is sent until you submit it.")
 
     col1, col2 = st.columns([2, 3])
     with col1:

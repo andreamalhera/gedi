@@ -3,7 +3,7 @@ import json
 import streamlit as st
 import streamlit.components.v1 as components
 
-from igedi.app.config import IGEDI_CITATION, LOGO_PATH
+from igedi.app.config import FEEDBACK_URL, IGEDI_CITATION, LOGO_PATH
 from igedi.app.state import load_example
 
 def get_base64_image(image_path):
@@ -80,7 +80,8 @@ def play_header():
         st.markdown(
             "iGEDI is based on [the ICPM'24 Demo Paper](https://ceur-ws.org/Vol-3783/paper_349.pdf). "
             "The code is available on [GitHub](https://github.com/andreamalhera/gedi). " \
-            "For larger runs, prepare your `config-file.json` here and run it locally with `pip install gedi`.",
+            "For larger runs, prepare your `config-file.json` here and run it locally with `pip install gedi`. "
+            f"Questions or ideas? [Share feedback]({FEEDBACK_URL}).",
         )
     with cite_col:
         citation_button()

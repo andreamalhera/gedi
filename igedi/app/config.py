@@ -35,6 +35,10 @@ INT_CONFIG_BOUNDS = {"mode": (1, 50), "num_traces": (1, 1000)}
 
 SIMILARITY_GOAL = 0.9
 
+FEEDBACK_URL = "https://huggingface.co/spaces/andreamalhera/igedi/discussions"
+ISSUE_URL = "https://github.com/andreamalhera/gedi/issues/new"
+MAX_ISSUE_CONFIG_CHARS = 3000
+
 STEP_TITLES = {
     "event_logs_generation": "Generate event logs",
     "feature_extraction": "Extract features",
