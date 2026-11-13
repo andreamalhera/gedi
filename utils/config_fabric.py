@@ -141,7 +141,7 @@ def play_header():
     with paper_col:
         st.markdown(
             "iGEDI is based on [the ICPM'24 Demo Paper](https://ceur-ws.org/Vol-3783/paper_349.pdf). "
-            "The code is available on [GitHub](https://github.com/andreamalhera/gedi). For larger runs, use: `pip install gedi`",
+            "The code is available on [GitHub](https://github.com/andreamalhera/gedi). For larger runs, prepare your config file here and run it locally with `pip install gedi`.",
         )
     with cite_col:
         citation_button()
@@ -571,7 +571,7 @@ def set_generator_targets(generator_params):
         n_targets = len(generator_params['targets'])
         st.caption(f"This run: {n_targets} target(s) × {generator_params['n_trials']} optimization trials. "
                    f"The hosted demo allows up to {MAX_TARGETS} targets and {MAX_TRIALS} trials; "
-                   "use `pip install gedi` for larger benchmarks.")
+                   "for larger runs, prepare your config file here and run it locally with `pip install gedi`.")
         if n_targets > MAX_TARGETS:
             stop_with_error(f"{n_targets} targets exceed the hosted limit of {MAX_TARGETS}. Use fewer values or features.")
         if generator_params['n_trials'] > MAX_TRIALS:
