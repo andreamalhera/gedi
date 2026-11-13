@@ -771,6 +771,7 @@ if __name__ == '__main__':
         pipeline_steps = st.multiselect(
             "Choose pipeline step",
             step_candidates,
+            format_func=lambda step: STEP_TITLES.get(step, step),
             **init_state("pipeline_steps", ["event_logs_generation"])
         )
 
@@ -802,7 +803,8 @@ if __name__ == '__main__':
                     step_config[step_key] = st.text_input(step_key, step_config[step_key])
 
         with view_col:
-            st.write(step_config)
+            with st.expander("Show configuration (JSON)"):
+                st.json(step_config)
 
         step_configs.append(step_config)
 
