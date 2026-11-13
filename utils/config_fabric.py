@@ -97,7 +97,7 @@ if __name__ == '__main__':
 
     button_col1, button_col2 = st.columns([1, 1])
     with button_col1:
-        create_button = st.download_button(label="Download config file", data=config_file, file_name=os.path.basename(output_path), mime='application/json')
+        create_button = st.download_button(label="Download config file", data=config_file, file_name=os.path.basename(output_path), mime='application/json', on_click="ignore")
         if pipeline_steps != ["event_logs_generation"]:
             st.write("Run command:")
             st.code(f"python -W ignore main.py -a {output_path}", language='bash')

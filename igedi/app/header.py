@@ -1,7 +1,6 @@
 import base64
 import json
 import streamlit as st
-import streamlit.components.v1 as components
 
 from igedi.app.config import FEEDBACK_URL, IGEDI_CITATION, LOGO_PATH
 from igedi.app.state import load_example
@@ -11,7 +10,7 @@ def get_base64_image(image_path):
         return base64.b64encode(image_file.read()).decode()
 
 def citation_button():
-    components.html(f"""
+    st.iframe(f"""
         <button id="cite" title="Copy the iGEDI citation to the clipboard"
                 style="font-family: 'Source Sans Pro', sans-serif; font-size: 14px; color: #808495;
                        background: transparent; border: 1px solid rgba(128, 128, 128, 0.4);
@@ -52,7 +51,10 @@ def play_header():
             max-width: 100%; /* Adjust the size as needed */
             overflow: hidden;
             object-fit: contain;
-            padding-top: 12px;
+            margin-top: 12px;
+            padding: 6px;
+            background: #ffffff;
+            border-radius: 6px;
        }}
         </style>
         <div class="header-logo">

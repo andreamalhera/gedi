@@ -35,7 +35,12 @@ INT_CONFIG_BOUNDS = {"mode": (1, 50), "num_traces": (1, 1000)}
 
 SIMILARITY_GOAL = 0.9
 
-FEEDBACK_URL = "https://huggingface.co/spaces/andreamalhera/igedi/discussions"
+HEATMAP_COLORS = {
+    "light": {"ink": "#2e3440", "background": "#e5e9f0"},
+    "dark": {"ink": "#eceff4", "background": "#2e3440"},
+}
+
+FEEDBACK_URL ="https://huggingface.co/spaces/andreamalhera/igedi/discussions"
 ISSUE_URL = "https://github.com/andreamalhera/gedi/issues/new"
 MAX_ISSUE_CONFIG_CHARS = 3000
 

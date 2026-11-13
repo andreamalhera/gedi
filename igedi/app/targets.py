@@ -189,7 +189,7 @@ def set_generator_targets(generator_params):
                 features_df.index.name = "log"
                 st.dataframe(features_df)
                 st.download_button("Download features as CSV", features_df.to_csv(), file_name="log_features.csv",
-                                   mime="text/csv")
+                                   mime="text/csv", on_click="ignore")
                 targets = features_df.to_dict(orient="records")
             else:
                 st.info("Select the features whose values your generated logs should match.")

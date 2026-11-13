@@ -9,7 +9,7 @@ import pandas as pd
 import streamlit as st
 
 from igedi.app import compute_feature_similarities, get_generated_file_name, is_numeric
-from igedi.app.config import IGEDI_CITATION, ISSUE_URL, MAX_ISSUE_CONFIG_CHARS, SIMILARITY_GOAL
+from igedi.app.config import HEATMAP_COLORS, IGEDI_CITATION, ISSUE_URL, MAX_ISSUE_CONFIG_CHARS, SIMILARITY_GOAL
 from igedi.app.jobs import feature_files
 
 def sort_key(val):
@@ -49,7 +49,7 @@ def plot_feasibility_heatmap(dataframes, targets):
     image = ax.imshow(np.ma.masked_invalid(similarities.to_numpy(dtype=float)),
                       cmap=cmap, vmin=0, vmax=1, aspect='auto')
 
-    ax.axvline(n_cols - 1.5, color='white', linewidth=4)
+    ax.axvline(n_cols - 1.5, color=plt.rcParams["axes.facecolor"], linewidth=4)
 
     if n_logs * n_cols <= 300:
         for (row, col), value in np.ndenumerate(similarities.to_numpy(dtype=float)):
@@ -135,7 +135,7 @@ def show_results(job):
     download_col, report_col = st.columns([1, 1])
     with download_col:
         st.download_button(label="Download generated logs (.zip)", data=results_zip(job),
-                           file_name='generated_logs.zip', mime='application/zip',
+                           file_name='generated_logs.zip', mime='application/zip', on_click="ignore",
                            help="Includes the .xes logs, their features, the config to reproduce the run, "
                                 "and how to cite iGEDI.")
     with report_col:
@@ -149,6 +149,11 @@ def show_results(job):
         st.caption("Each row is one generated log; each cell shows how close that feature came to its "
                    "target (1 = exact, green is good). The last column, *overall*, is the log's "
                    "similarity to its whole target.")
-        fig = plot_feasibility_heatmap(dataframes, job['targets'])
-        st.pyplot(fig, dpi=400)
+        colors = HEATMAP_COLORS.get(st.context.theme.type, HEATMAP_COLORS["light"])
+        with plt.rc_context({"figure.facecolor": "none", "axes.facecolor": colors["background"],
+                             "text.color": colors["ink"], "axes.labelcolor": colors["ink"],
+                             "xtick.color": colors["ink"], "ytick.color": colors["ink"],
+                             "axes.edgecolor": colors["ink"]}):
+            fig = plot_feasibility_heatmap(dataframes, job['targets'])
+        st.pyplot(fig)
         plt.close(fig)
