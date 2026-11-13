@@ -9,6 +9,12 @@ python_version: "3.12"
 app_file: utils/config_fabric.py
 pinned: false
 license: mit
+short_description: Generate event logs with the features you choose
+tags:
+  - process-mining
+  - event-logs
+  - synthetic-data
+  - benchmarking
 ---
 
 <p>
@@ -30,7 +36,7 @@ This repository contains the codebase for the interactive web application tool (
 - [Citation](#citation)
 
 ## Interactive Web Application
-Our [interactive web application](https://huggingface.co/spaces/andreamalhera/gedi) (iGEDI) guides you through the specification process, runs GEDI for you. You can directly download the resulting generated logs or the configuration file to run GEDI locally.
+Our [interactive web application](https://huggingface.co/spaces/andreamalhera/igedi) (iGEDI) guides you through the specification process and runs GEDI for you. You can directly download the resulting generated logs or the configuration file to run GEDI locally.
 ![Interface Screenshot](gedi/utils/iGEDI_interface.png)
 
 ### Running locally
@@ -84,7 +90,7 @@ Our pipeline offers several pipeline steps, which can be run sequentially or par
 - [Feature Extraction](#feature-extraction)
 - [Generation](#generation)
 - [Benchmark](#benchmark)
-- [Evaluation Plotter](https://github.com/andreamalhera/gedi/blob/16-documentation-update-readme/README.md#evaluation-plotting)
+- [Evaluation Plotter](https://github.com/andreamalhera/gedi/blob/main/README.md#evaluation-plotting)
 
 To run different steps of the GEDI pipeline, please adapt the `.json` accordingly.
 ```console
@@ -377,7 +383,7 @@ python main.py -a config_files/pipeline_steps/benchmark.json
 In the `benchmark.json`, we have the following key-value pairs:
 
 * pipeline_step: denotes the current step in the pipeline (here: benchmark_test)
-* benchmark_test: defines the downstream task. Currently (in v 1.0), only `discovery` for process discovery is implemented
+* benchmark_test: defines the downstream task. Currently, only `discovery` for process discovery is implemented
 * input_path: defines the input folder where the synthesized event log data are stored
 * output_path: defines the output folder
 * miners: defines the miners for the downstream task 'discovery' which are used in the benchmarking. In v 1.0 the miners 'inductive' for inductive miner, 'heuristics' for heuristics miner, 'imf' for inductive miner infrequent, as well as 'ilp' for integer linear programming are implemented
@@ -430,7 +436,7 @@ open "http://localhost:9000/"
 ```
 
 ### Visualizations
-To run the visualizations, we employ [jupyter notebooks](https://jupyter.org/install) and [add the installed environment to the jupyter notebook](https://medium.com/@nrk25693/how-to-add-your-conda-environment-to-your-jupyter-notebook-in-just-4-steps-abeab8b8d084). We then start all visualizations by running e.g.: `jupyter noteboook`. In the following, we describe the `.ipynb`-files in the folder `\notebooks` to reproduce the figures from our paper. 
+To run the visualizations, we employ [jupyter notebooks](https://jupyter.org/install) and [add the installed environment to the jupyter notebook](https://medium.com/@nrk25693/how-to-add-your-conda-environment-to-your-jupyter-notebook-in-just-4-steps-abeab8b8d084). We then start all visualizations by running e.g.: `jupyter notebook`. In the following, we describe the `.ipynb`-files in the folder `\notebooks` to reproduce the figures from our paper. 
 
 #### [Fig. 4 and fig. 5 Representativeness](notebooks/gedi_figs4and5_representativeness.ipynb)
 To visualize the coverage of the feasible feature space of generated event logs compared to existing real-world benchmark datasets, in this notebook, we conduct a principal component analysis on the features of both settings. The first two principal components are utilized to visualize the coverage which is further highlighted by computing a convex hull of the 2D mapping.Additionally, we visualize the distribution of each meta feature we used in the paper as a boxplot. Additional features can be extracted with FEEED. Therefore, the notebook contains the figures 4 and 5 in the paper.
@@ -443,7 +449,7 @@ This notebook is used to visualize the metric distribution of real event logs co
 This notebook is used to answer the question if there is a statistically significant relation between feature similarity and performance metrics for the downstream tasks of process discovery. For that, we compute the pearson coefficient, as well as the kendall's tau coefficient. This elucidates the correlation between the features with metric scores being used for process discovery. Each coefficient is calculated for three different settings: i) real-world datasets; ii) synthesized event log data with real-world targets; iii) synthesized event log data with grid objectives. Figures 7 and 8 shown in the paper refer to this notebook.
 
 #### [Fig. 9 Consistency and fig. 10 Limitations](notebooks/gedi_figs9and10_consistency.ipynb)
-Likewise to the evaluation on the statistical tests in notebook `gedi_figs7and8_benchmarking_statisticalTests.ipynb`, this notebook is used to compute the differences between two correlation matrices $\Delta C = C_1 - C_2$. This logic is employed to evaluate and visualize the distance of two correlation matrices. Furthermore, we show how significant scores are retained from the correlations being evaluated on real-world datasets coompared to synthesized event log datasets with real-world targets. In Fig. 9 and 10 in the paper, the results of the notebook are shown. 
+Likewise to the evaluation on the statistical tests in notebook `gedi_figs7and8_benchmarking_statisticalTests.ipynb`, this notebook is used to compute the differences between two correlation matrices $\Delta C = C_1 - C_2$. This logic is employed to evaluate and visualize the distance of two correlation matrices. Furthermore, we show how significant scores are retained from the correlations being evaluated on real-world datasets compared to synthesized event log datasets with real-world targets. In Fig. 9 and 10 in the paper, the results of the notebook are shown. 
 
 ## Citation
 The `GEDI` framework is taken directly from the original paper by [Maldonado](mailto:andreamalher.works@gmail.com), Frey, Tavares, Rehwald and Seidl on BPM'24.
@@ -465,23 +471,25 @@ year="2024",
 publisher="Springer Nature Switzerland",
 address="Cham",
 pages="221--237",
-abstract="Process mining solutions include enhancing performance, conserving resources, and alleviating bottlenecks in organizational contexts. However, as in other data mining fields, success hinges on data quality and availability. Existing analyses for process mining solutions lack diverse and ample data for rigorous testing, hindering insights' generalization. To address this, we propose Generating Event Data with Intentional features, a framework producing event data sets satisfying specific meta-features. Considering the meta-feature space that defines feasible event logs, we observe that existing real-world datasets describe only local areas within the overall space. Hence, our framework aims at providing the capability to generate an event data benchmark, which covers unexplored regions. Therefore, our approach leverages a discretization of the meta-feature space to steer generated data towards regions, where a combination of meta-features is not met yet by existing benchmark datasets. Providing a comprehensive data pool enriches process mining analyses, enables methods to capture a wider range of real-world scenarios, and improves evaluation quality. Moreover, it empowers analysts to uncover correlations between meta-features and evaluation metrics, enhancing explainability and solution effectiveness. targets demonstrate GEDI's ability to produce a benchmark of intentional event data sets and robust analyses for process mining tasks.",
+abstract="Process mining solutions include enhancing performance, conserving resources, and alleviating bottlenecks in organizational contexts. However, as in other data mining fields, success hinges on data quality and availability. Existing analyses for process mining solutions lack diverse and ample data for rigorous testing, hindering insights' generalization. To address this, we propose Generating Event Data with Intentional features, a framework producing event data sets satisfying specific meta-features. Considering the meta-feature space that defines feasible event logs, we observe that existing real-world datasets describe only local areas within the overall space. Hence, our framework aims at providing the capability to generate an event data benchmark, which covers unexplored regions. Therefore, our approach leverages a discretization of the meta-feature space to steer generated data towards regions, where a combination of meta-features is not met yet by existing benchmark datasets. Providing a comprehensive data pool enriches process mining analyses, enables methods to capture a wider range of real-world scenarios, and improves evaluation quality. Moreover, it empowers analysts to uncover correlations between meta-features and evaluation metrics, enhancing explainability and solution effectiveness. Experiments demonstrate GEDI's ability to produce a benchmark of intentional event data sets and robust analyses for process mining tasks.",
 isbn="978-3-031-70396-6"
 }
 ```
-Furthermore, the `iGEDI` web application is taken directly from the original paper by [Maldonado](mailto:andreamalher.works@gmail.com), Aryasomayajula, Frey, and Seidl and is *to appear on Demos@ICPM'24*.
+Furthermore, the `iGEDI` web application is taken directly from the original paper by [Maldonado](mailto:andreamalher.works@gmail.com), Aryasomayajula, Frey, and Seidl, published in the [ICPM'24 Tool Demonstration Track](https://ceur-ws.org/Vol-3783/paper_349.pdf).
 ```bibtex
 @inproceedings{maldonado2024igedi,
   author       = {Andrea Maldonado and
                   Sai Anirudh Aryasomayajula and
                   Christian M. M. Frey and
                   Thomas Seidl},
-  editor       = {Jochen De Weerdt, Giovanni Meroni, Han van der Aa, and Karolin Winter},
+  editor       = {Jochen De Weerdt and Giovanni Meroni and Han van der Aa and Karolin Winter},
   title        = {iGEDI: interactive Generating Event Data with Intentional Features},
   booktitle    = {ICPM 2024 Tool Demonstration Track, October 14-18, 2024, Kongens Lyngby, Denmark},
   series       = {{CEUR} Workshop Proceedings},
+  volume       = {3783},
   publisher    = {CEUR-WS.org},
   year         = {2024},
+  url          = {https://ceur-ws.org/Vol-3783/paper_349.pdf},
   bibsource    = {dblp computer science bibliography, https://dblp.org}
 }
 ```
