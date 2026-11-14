@@ -11,7 +11,7 @@ version = version_string
 setup(
         name = 'gedi',
         version = str(version),
-        packages = find_packages(),
+        packages = find_packages(exclude=["igedi", "igedi.*"]),
         description = 'Generating Event Data with Intentional Features for Benchmarking Process Mining',
         author = 'Andrea Maldonado',
         author_email = 'andreamalher.works@gmail.com',

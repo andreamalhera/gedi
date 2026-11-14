@@ -4,7 +4,7 @@ emoji: 🌖
 colorFrom: indigo
 colorTo: pink
 sdk: streamlit
-sdk_version: 1.38.0
+sdk_version: 1.67.0
 python_version: "3.12"
 app_file: utils/config_fabric.py
 pinned: false
@@ -42,7 +42,7 @@ Our [interactive web application](https://huggingface.co/spaces/andreamalhera/ig
 ### Running locally
 To start the iGEDI web application on your own machine (requires Python 3.12, matching the deployed app):
 ```console
-pip install -r requirements.txt streamlit==1.38.0
+pip install -r requirements.txt streamlit==1.67.0
 streamlit run utils/config_fabric.py
 ```
 This launches a local Streamlit server, by default at [http://localhost:8501](http://localhost:8501).

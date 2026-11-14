@@ -1,0 +1,19 @@
+[theme]
+font = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap"
+baseRadius = "6px"
+
+[theme.light]
+primaryColor = "#5e81ac"
+backgroundColor = "#e5e9f0"
+secondaryBackgroundColor = "#eceff4"
+textColor = "#2e3440"
+linkColor = "#5e81ac"
+borderColor = "#d8dee9"
+
+[theme.dark]
+primaryColor = "#88c0d0"
+backgroundColor = "#2e3440"
+secondaryBackgroundColor = "#3b4252"
+textColor = "#eceff4"
+linkColor = "#88c0d0"
+borderColor = "#4c566a"
